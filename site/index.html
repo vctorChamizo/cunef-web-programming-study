@@ -2,29 +2,116 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>G247 · Sitio de estudio</title>
-  <meta name="description" content="Sitio de estudio de Programación de aplicaciones Web (G247), grupo IACD-A, curso 2026-27.">
+  <meta name="description" content="Sitio de estudio de Programación de aplicaciones Web (G247), grupo IACD-A, CUNEF Universidad, curso 2026-27: guías teóricas, quizzes, simulacros del examen y laboratorios.">
+  <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b1017" media="(prefers-color-scheme: dark)">
+  <meta property="og:title" content="G247 · Sitio de estudio">
+  <meta property="og:description" content="Guías teóricas, quizzes, simulacros del examen y laboratorios de Programación de aplicaciones Web (CUNEF, 2026-27).">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <script>
+    // Apply the saved theme before the first paint to avoid a flash.
+    try { var t = localStorage.getItem('g247-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
   <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
   <a class="skip" href="#main">Saltar al contenido</a>
+  <div class="read-progress" id="read-progress" aria-hidden="true"><span></span></div>
+
   <header class="topbar">
-    <a class="brand" href="#/"><span class="brand-code">G247</span><span class="brand-name">Programación de aplicaciones Web</span></a>
-    <nav class="nav" aria-label="Secciones">
-      <a href="#/bloque/1">Bloque I</a>
-      <a href="#/bloque/2">Bloque II</a>
-      <a href="#/bloque/3">Bloque III</a>
-      <a href="#/quizzes">Quizzes</a>
-      <a href="#/examen">Examen</a>
-      <a href="#/recursos">Recursos</a>
-    </nav>
+    <button class="icon-btn menu-btn" id="menu-btn" type="button" aria-label="Abrir el menú" aria-controls="sidebar" aria-expanded="false">
+      <svg class="i" aria-hidden="true"><use href="#i-menu"/></svg>
+    </button>
+    <a class="brand" href="#/" aria-label="Inicio del sitio de estudio">
+      <span class="brand-mark" aria-hidden="true">G247</span>
+      <span class="brand-text">
+        <span class="brand-name">Programación de aplicaciones Web</span>
+        <span class="brand-sub">Sitio de estudio · IACD-A · 2026-27</span>
+      </span>
+    </a>
+    <div class="topbar-actions">
+      <button class="search-trigger" id="search-btn" type="button" aria-label="Buscar en el sitio" aria-haspopup="dialog">
+        <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+        <span class="search-trigger-label">Buscar en guías, preguntas y sesiones</span>
+        <kbd class="search-kbd" id="search-kbd">Ctrl K</kbd>
+      </button>
+      <button class="icon-btn" id="theme-btn" type="button" aria-label="Cambiar entre tema claro y oscuro">
+        <svg class="i theme-dark" aria-hidden="true"><use href="#i-moon"/></svg>
+        <svg class="i theme-light" aria-hidden="true"><use href="#i-sun"/></svg>
+      </button>
+    </div>
   </header>
-  <main id="main" tabindex="-1"></main>
-  <footer class="footer">
-    <p>Programación de aplicaciones Web (G247) · Grado en Inteligencia Artificial y Ciencia de Datos, grupo IACD-A · CUNEF Universidad, curso 2026-27.</p>
-    <p>El progreso de los quizzes se guarda solo en este navegador.</p>
-  </footer>
+
+  <div class="shell">
+    <aside class="sidebar" id="sidebar" aria-label="Navegación principal">
+      <nav class="side-nav" id="side-nav"></nav>
+      <div class="side-foot" id="side-foot"></div>
+    </aside>
+    <div class="backdrop" id="backdrop" hidden></div>
+    <div class="content">
+      <main id="main" tabindex="-1">
+        <noscript><p>Este sitio necesita JavaScript para funcionar.</p></noscript>
+      </main>
+      <footer class="footer">
+        <p>Programación de aplicaciones Web (G247) · Grado en Inteligencia Artificial y Ciencia de Datos, grupo IACD-A · CUNEF Universidad, curso 2026-27.</p>
+        <p>El progreso se guarda solo en este navegador. No se envía a ningún sitio y no cuenta para la evaluación.</p>
+      </footer>
+    </div>
+  </div>
+
+  <div class="search-dialog" id="search-dialog" role="dialog" aria-modal="true" aria-label="Buscar" hidden>
+    <div class="search-panel">
+      <div class="search-field">
+        <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+        <input id="search-input" type="search" placeholder="Buscar: flexbox, middleware, JOIN, useEffect…" autocomplete="off" spellcheck="false" aria-controls="search-results" aria-describedby="search-help">
+        <button class="esc-btn" id="search-close" type="button">Esc</button>
+      </div>
+      <div class="search-results" id="search-results" role="listbox" aria-label="Resultados"></div>
+      <p class="search-help" id="search-help"><kbd>↑</kbd><kbd>↓</kbd> moverse · <kbd>Intro</kbd> abrir · <kbd>Esc</kbd> cerrar</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+    <defs>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/></symbol>
+      <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1Z"/></symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/></symbol>
+      <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2Z"/><path d="M4 21V5M8 7h7"/></symbol>
+      <symbol id="i-check-square" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m8 12 3 3 5-6"/></symbol>
+      <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></symbol>
+      <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+      <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
+      <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+      <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></symbol>
+      <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+      <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+      <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5Z"/></symbol>
+      <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M3 7h3.5c2 0 3.2 1 4.2 2.6l2.6 4.8c1 1.6 2.2 2.6 4.2 2.6H21M3 17h3.5c1.4 0 2.4-.5 3.2-1.4M13.3 8.4c.8-.9 1.8-1.4 3.2-1.4H21M18 4l3 3-3 3M18 14l3 3-3 3"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+      <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5M16 7l5 5-5 5"/></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20Z"/><path d="M12 10v4M12 17v.01"/></symbol>
+      <symbol id="i-award" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6"/><path d="m8.5 14-1.5 7 5-3 5 3-1.5-7"/></symbol>
+      <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+    </defs>
+  </svg>
+
   <script src="data/course.js"></script>
   <script src="data/quizzes.js"></script>
   <script src="data/guides.js"></script>

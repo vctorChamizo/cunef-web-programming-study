@@ -13,8 +13,10 @@ The site is in Spanish. Code, comments and repository documentation are in Engli
 
 ```text
 site/                 everything that is published
-  index.html
-  assets/             app.js (hash router, quiz engine) and styles.css
+  index.html          app shell (top bar, sidebar, search dialog, icon sprite)
+  sw.js               offline support: network first, cached copy as fallback
+  assets/             app.js (router, pages, quiz and practice-exam engines, search, progress),
+                      styles.css (light and dark themes) and icon.svg
   data/
     course.js         course map, exam facts, labs and links (hand-written, sources in comments)
     quizzes.js        GENERATED: quizzes 1-10 and practice exams
@@ -22,8 +24,26 @@ site/                 everything that is published
 .github/workflows/    syntax check and Pages deployment
 ```
 
-Plain HTML, CSS and JavaScript: no build step, no dependencies, no CDN. Progress is stored in the
-browser's `localStorage`. Works opened directly from disk and on GitHub Pages.
+Plain HTML, CSS and JavaScript: no build step, no dependencies, no CDN. Works opened directly from
+disk and on GitHub Pages.
+
+## What students get
+
+- **Home**: exam countdown, today's or the next class session, "continue where you left off",
+  progress summary and the three blocks.
+- **Guides**: table of contents that follows the reading, reading progress, copy buttons and
+  language labels on code, links to each section, search, print-friendly layout.
+- **Quizzes**: one question at a time with immediate feedback, keyboard shortcuts (A-D, Enter),
+  resume after leaving, results with a full review and "retry only the failed ones".
+- **Practice exams**: the three fixed ones plus a random one (3 + 3 + 2 questions from blocks I, II
+  and III), question navigator, indicative timer, grade out of 4.
+- **Error review**: every failed question is kept until it is answered correctly anywhere.
+- **Search** (`Ctrl K`, `⌘ K` or `/`) across guide sections, questions, sessions, labs and docs.
+- **Progress** page, light and dark themes, mobile layout, offline support.
+
+Progress is stored only in the browser's `localStorage` (key `g247-study-v2`; best scores from the
+first version, `g247-progress`, are migrated). Add `?hoy=YYYY-MM-DD` to the URL to preview the
+calendar-dependent views on another date.
 
 ## Where the content comes from
 
