@@ -79,6 +79,7 @@ window.COURSE = {
           ],
           links: [['JWT — Documentación oficial', 'https://jwt.io/introduction'], ['Zod — Documentación oficial', 'https://zod.dev/'], ['jsonwebtoken — Documentación oficial', 'https://github.com/auth0/node-jsonwebtoken#readme'], ['bcrypt.js — Documentación oficial', 'https://github.com/dcodeIO/bcrypt.js#readme']] },
         { n: 9, title: 'Entrega de la Práctica 1 y repaso del bloque II',
+          note: 'Semana dedicada a la entrega y al repaso de la Práctica 1. No introduce contenido nuevo, por eso no tiene documentación propia: la referencia es la documentación de las semanas 5 a 8.',
           sessions: [
             { n: '29', title: 'Entrega de la Práctica 1 y presentación de la Práctica 2' },
             { n: '30', title: 'Repaso de la Práctica 1 y otros estilos de API' },
@@ -109,6 +110,7 @@ window.COURSE = {
           ],
           links: [['Axios — Documentación oficial', 'https://axios-http.com/es/docs/intro'], ['React Router — Documentación oficial', 'https://reactrouter.com/start/library/installation']] },
         { n: 12, title: 'Gestión de estado y estilos',
+          pending: true, note: 'Semana pendiente de actualización. Los enlaces de documentación se añadirán cuando el contenido esté publicado en Canvas.',
           sessions: [
             { n: '37', title: 'Gestión de estado: elevar el estado y Context API' },
             { n: '38', title: 'Estilos y extras' },
@@ -116,6 +118,7 @@ window.COURSE = {
           ],
           links: [] },
         { n: 13, title: 'Presentaciones de la Práctica 2 y repaso general',
+          pending: true, note: 'Semana pendiente de actualización. Los enlaces de documentación se añadirán cuando el contenido esté publicado en Canvas.',
           sessions: [
             { n: '40', title: 'Presentaciones de la Práctica 2' },
             { n: '41', title: 'Presentaciones de la Práctica 2' },

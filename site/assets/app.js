@@ -355,7 +355,7 @@
     try { host = new URL(url).hostname.replace(/^www\./, ''); } catch { /* keep empty */ }
     return `<a class="res-link" href="${url}" target="_blank" rel="noopener">
       <span class="res-mono${monogram(name).length > 3 ? ' long' : ''}" aria-hidden="true">${esc(monogram(name))}</span>
-      <span class="res-txt"><span class="res-name">${esc(name)}</span><span class="res-meta">${esc(rest.join(' — ') || host)}${rest.length ? ` · ${esc(host)}` : ''}</span></span>
+      <span class="res-txt"><span class="res-name">${esc(name)}</span>${rest.length ? `<span class="res-meta">${esc(rest.join(' — '))}</span>` : ''}<span class="res-host">${esc(host)}</span></span>
       ${icon('external', 'res-ext')}</a>`;
   }
   const linkGrid = (links, cls = '') => `<div class="res-grid ${cls}">${links.map(linkTile).join('')}</div>`;
@@ -363,10 +363,11 @@
   // ---------- Weeks (same order as the Canvas modules) ----------
   function weeksHtml(b) {
     return `<div class="weeks">${b.weekList.map((w) => `<section class="card week" id="semana-${w.n}" style="--bc:var(--${b.color})">
-      <header class="week-head"><span class="week-n">Semana ${w.n}</span><h3>${esc(w.title)}</h3></header>
+      <header class="week-head"><span class="week-n">Semana ${w.n}</span><h3>${esc(w.title)}</h3>${w.pending ? '<span class="chip warn">Pendiente de actualización</span>' : ''}</header>
       <ol class="week-sessions">${w.sessions.map((s) => `<li class="${s.lab ? 'lab' : ''}"><span class="n">Sesión ${esc(s.n)}</span><span class="t">${esc(s.title)}</span>${s.lab ? `<span class="chip accent">${esc(s.lab)}</span>` : ''}</li>`).join('')}</ol>
       ${w.milestone ? `<p class="week-note">${icon('flag')}${esc(w.milestone)}</p>` : ''}
       ${w.links.length ? `<div class="week-res">${linkGrid(w.links, 'compact')}</div>` : ''}
+      ${w.note ? `<p class="week-info">${icon('info')}<span>${esc(w.note)}</span></p>` : ''}
     </section>`).join('')}</div>`;
   }
   function coursePage() {
@@ -879,7 +880,7 @@
       ${sectionHead('Documentación por semana', `<a href="#/curso">Mapa del curso ${icon('arrow-right')}</a>`)}
       <div class="res-blocks">${BLOCKS.map((b) => `<section class="res-block" style="--bc:var(--${b.color})">
         <p class="eyebrow" style="color:var(--${b.color})">Bloque ${b.roman} · ${esc(b.title)}</p>
-        ${b.weekList.filter((w) => w.links.length).map((w) => `<div class="res-week"><div class="res-week-label"><span class="week-n">Semana ${w.n}</span><span>${esc(w.title)}</span></div>${linkGrid(w.links)}</div>`).join('')}
+        ${b.weekList.map((w) => `<div class="res-week"><div class="res-week-label"><span class="week-n">Semana ${w.n}</span><span>${esc(w.title)}</span>${w.pending ? '<span class="chip warn">Pendiente</span>' : ''}</div>${w.links.length ? linkGrid(w.links) : `<p class="week-info">${icon('info')}<span>${esc(w.note || 'Sin documentación asociada.')}</span></p>`}</div>`).join('')}
       </section>`).join('')}</div>`, 'Recursos');
   }
 
