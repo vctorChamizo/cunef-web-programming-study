@@ -1,8 +1,9 @@
 # G247 study site
 
-Study site for **Web Application Programming (G247)**, group IACD-A, CUNEF Universidad, 2026-27.
-Students use it to prepare the final exam: course map by block and session, the theory guides of
-blocks I and II, ten practice quizzes (one per lab), three practice exams in the format of the
+Study site for **Web Application Programming (G247)**, CUNEF Universidad. It is shared by the
+groups of both semesters, so it names no group and shows no calendar dates: the course is organised
+by week and session, in the same order as the Canvas course. Students use it to prepare the final
+exam: course map by week and session, the theory guides, ten practice quizzes (one per lab), three practice exams in the format of the
 multiple-choice part, and links to the labs and official documentation.
 
 Published with GitHub Pages: <https://vctorchamizo.github.io/cunef-web-programming-study/>
@@ -18,9 +19,9 @@ site/                 everything that is published
   assets/             app.js (router, pages, quiz and practice-exam engines, search, progress),
                       styles.css (light and dark themes) and icon.svg
   data/
-    course.js         course map, exam facts, labs and links (hand-written, sources in comments)
+    course.js         weeks, sessions, labs, practices and links (hand-written, sources in comments)
     quizzes.js        GENERATED: quizzes 1-10 and practice exams
-    guides.js         GENERATED: theory guides of blocks I and II, converted from Markdown
+    guides.js         GENERATED: theory guides, converted from Markdown
 .github/workflows/    syntax check and Pages deployment
 ```
 
@@ -29,9 +30,10 @@ disk and on GitHub Pages.
 
 ## What students get
 
-- **Home**: exam countdown, today's or the next class session, "continue where you left off",
-  progress summary and the three blocks.
-- **Guides**: table of contents that follows the reading, reading progress, copy buttons and
+- **Home**: "continue where you left off", the course map, progress summary and the three blocks.
+- **Course map**: every week with its sessions, lab and reference links, as in Canvas, and the two
+  practices.
+- **Guides**: table of contents that follows the reading, copy buttons and
   language labels on code, links to each section, search, print-friendly layout.
 - **Quizzes**: one question at a time with immediate feedback, keyboard shortcuts (A-D, Enter),
   resume after leaving, results with a full review and "retry only the failed ones".
@@ -42,8 +44,7 @@ disk and on GitHub Pages.
 - **Progress** page, light and dark themes, mobile layout, offline support.
 
 Progress is stored only in the browser's `localStorage` (key `g247-study-v2`; best scores from the
-first version, `g247-progress`, are migrated). Add `?hoy=YYYY-MM-DD` to the URL to preview the
-calendar-dependent views on another date.
+first version, `g247-progress`, are migrated).
 
 ## Where the content comes from
 

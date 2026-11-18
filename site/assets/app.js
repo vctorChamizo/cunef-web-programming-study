@@ -7,18 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const main = $('#main');
   const LETTERS = 'ABCDEF';
-  const MONTHS = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, oct: 9, nov: 10, dic: 11 };
-  const EXAM_DATE = new Date(C.exam.date);
-  const YEAR = EXAM_DATE.getFullYear();
   const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-
-  // "Today" can be overridden with ?hoy=YYYY-MM-DD to check the calendar views.
-  const TODAY = (() => {
-    const p = new URLSearchParams(location.search).get('hoy');
-    const d = p && /^\d{4}-\d{2}-\d{2}$/.test(p) ? new Date(p + 'T00:00:00') : new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  })();
 
   // ---------- Helpers ----------
   const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -40,9 +29,6 @@
   const fmtNum = (n, d = 1) => n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
   const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-  const dayMs = 86400000;
-  const parseDay = (s) => { const [d, m] = String(s).split(' '); return new Date(YEAR, MONTHS[m], Number(d)); };
-  const fmtDate = (d) => d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
   const fmtShort = (ts) => new Date(ts).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
   const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
   const isObjective = (q) => q.type !== 'essay';
@@ -51,17 +37,11 @@
   const typeLabel = { mc: 'Opción múltiple', tf: 'Verdadero o falso', fib: 'Completar', essay: 'Ejercicio de programación' };
 
   // ---------- Course model ----------
-  const BLOCKS = C.blocks.map((b) => {
-    const dates = b.sessions.map((s) => parseDay(s.date));
-    const first = dates[0], last = dates[dates.length - 1];
-    const status = TODAY < first ? 'soon' : TODAY > last ? 'done' : 'now';
-    return { ...b, first, last, status, color: `b${b.id}` };
-  });
+  const BLOCKS = C.blocks.map((b) => ({ ...b, color: `b${b.id}`, sessions: b.weekList.flatMap((w) => w.sessions.map((s) => ({ ...s, week: w.n }))) }));
   const blockOfQuiz = (n) => BLOCKS.find((b) => b.quizzes.includes(Number(n)));
   const blockById = (id) => BLOCKS.find((b) => String(b.id) === String(id));
-  const SESSIONS = BLOCKS.flatMap((b) => b.sessions.map((s) => ({ ...s, block: b, day: parseDay(s.date) })));
+  const SESSIONS = BLOCKS.flatMap((b) => b.sessions.map((s) => ({ ...s, block: b })));
   const labSession = (id) => SESSIONS.find((s) => s.lab === id);
-  const statusChip = { soon: '<span class="chip">Próximamente</span>', now: '<span class="chip accent">En curso</span>', done: '<span class="chip ok">Impartido</span>' };
 
   // Question index: every question by id, with its source and block.
   const PREFIX_BLOCK = { c1: 1, c2: 1, c3: 1, html: 1, css: 1, js: 1, dom: 1, node: 2, express: 2, rest: 2, sql: 2, auth: 2, components: 3, state: 3, routing: 3 };
@@ -76,7 +56,7 @@
     let s = null;
     try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { s = null; }
     if (!s || typeof s !== 'object') s = {};
-    for (const k of ['quiz', 'exam', 'wrong', 'guide', 'current']) if (!s[k] || typeof s[k] !== 'object') s[k] = {};
+    for (const k of ['quiz', 'exam', 'wrong', 'current']) if (!s[k] || typeof s[k] !== 'object') s[k] = {};
     if (!s.migrated) { // best scores saved by the first version of the site
       try {
         const old = JSON.parse(localStorage.getItem('g247-progress') || '{}');
@@ -113,7 +93,6 @@
   }
   const setLast = (href, title, sub) => { S.last = { href, title, sub, at: Date.now() }; save(); };
   const wrongIds = () => Object.keys(S.wrong).filter((id) => QI[id]);
-  const guideRead = (id) => { const g = S.guide[id]; const toc = G[id]?.toc || []; return g?.read ? pct(toc.filter((t) => g.read[t.id]).length, toc.length) : 0; };
 
   // ---------- Shell: sidebar, theme, toast, mobile menu ----------
   function navLink(href, label, key, active, extra = '', ic = '') {
@@ -126,25 +105,21 @@
         ${navLink('#/', 'Inicio', 'home', active, '', icon('home'))}
       </div>
       <div class="nav-group"><div class="nav-label">Curso</div>
+        ${navLink('#/curso', 'Mapa del curso', 'curso', active, '', icon('calendar'))}
         ${BLOCKS.map((b) => navLink(`#/bloque/${b.id}`, `Bloque ${b.roman} · ${esc(b.title)}`, 'b' + b.id, active, '', `<span class="nav-dot" style="background:var(--${b.color})"></span>`)).join('')}
       </div>
       <div class="nav-group"><div class="nav-label">Estudiar</div>
-        ${BLOCKS.filter((b) => b.guide && G[b.guide]).map((b) => navLink(`#/guia/${b.guide}`, `Guía del bloque ${b.roman}`, 'g-' + b.guide, active, guideRead(b.guide) ? `<span class="badge soft">${guideRead(b.guide)} %</span>` : '', icon('book'))).join('')}
+        ${BLOCKS.filter((b) => b.guide && G[b.guide]).map((b) => navLink(`#/guia/${b.guide}`, `Guía del bloque ${b.roman}`, 'g-' + b.guide, active, '', icon('book'))).join('')}
       </div>
       <div class="nav-group"><div class="nav-label">Practicar</div>
         ${navLink('#/quizzes', 'Quizzes por laboratorio', 'quizzes', active, '', icon('check-square'))}
         ${navLink('#/simulacros', 'Simulacros del examen', 'simulacros', active, '', icon('clipboard'))}
         ${navLink('#/repaso', 'Repaso de errores', 'repaso', active, wrong ? `<span class="badge">${wrong}</span>` : '', icon('rotate'))}
       </div>
-      <div class="nav-group"><div class="nav-label">Examen y recursos</div>
-        ${navLink('#/examen', 'Examen final', 'examen', active, '', icon('flag'))}
+      <div class="nav-group"><div class="nav-label">Recursos</div>
         ${navLink('#/recursos', 'Laboratorios y recursos', 'recursos', active, '', icon('link'))}
         ${navLink('#/progreso', 'Progreso', 'progreso', active, '', icon('chart'))}
       </div>`;
-    $('#side-foot').innerHTML = `<a class="side-exam" href="#/examen">
-        <div class="k">Examen final</div>
-        <div class="v">${esc(C.exam.label.split(',')[0])}</div>
-        <div class="d">${esc((C.exam.label.split(',')[1] || '').trim())} h · ${esc(C.exam.room)}</div></a>`;
   }
 
   const toastEl = $('#toast');
@@ -183,7 +158,6 @@
     view.ac.abort();
     view.cleanups.forEach((f) => { try { f(); } catch { /* ignore */ } });
     view = { ac: new AbortController(), cleanups: [] };
-    $('#read-progress span').style.width = '0';
     return view;
   }
   const on = (el, ev, fn, opts = {}) => el.addEventListener(ev, fn, { ...opts, signal: view.ac.signal });
@@ -259,7 +233,7 @@
       const s = labSession(l.id);
       return `<div class="lab-row">
         <span class="lab-id">${esc(l.id)}</span>
-        <div class="lab-main"><div class="t">${esc(l.title)}</div><div class="s">${s ? `Sesión ${esc(s.n)} · ${esc(s.date)} · Bloque ${s.block.roman}` : ''}</div></div>
+        <div class="lab-main"><div class="t">${esc(l.title)}</div><div class="s">${s ? `Semana ${s.week} · Sesión ${esc(s.n)} · Bloque ${s.block.roman}` : ''}</div></div>
         <div class="lab-links">
           ${l.brief ? `<a class="btn sm secondary" href="${l.brief}" target="_blank" rel="noopener">Enunciado ${icon('external')}</a>` : '<span class="chip">Enunciado próximamente</span>'}
           ${l.solutionUrl ? `<a class="btn sm secondary" href="${l.solutionUrl}" target="_blank" rel="noopener">Solución ${icon('external')}</a>` : l.brief ? '<span class="chip">Solución no publicada</span>' : ''}
@@ -272,9 +246,6 @@
 
   // ---------- Home ----------
   function home() {
-    const upcoming = SESSIONS.filter((s) => s.day >= TODAY);
-    const nextDay = upcoming[0]?.day;
-    const nextSessions = nextDay ? upcoming.filter((s) => +s.day === +nextDay) : [];
     const quizKeys = Object.keys(Q);
     const doneQuizzes = quizKeys.filter((n) => S.quiz[n]?.attempts);
     const avg = doneQuizzes.length ? Math.round(doneQuizzes.reduce((a, n) => a + pct(S.quiz[n].best, S.quiz[n].total || objective(Q[n].questions)), 0) / doneQuizzes.length) : null;
@@ -289,15 +260,14 @@
       : `<a class="card continue-card" href="#/guia/I"><span class="icon-tile">${icon('book')}</span>
           <div class="txt"><div class="s">Por dónde empezar</div><div class="t">Guía teórica del bloque I</div><div class="s">Leer la guía y hacer después el quiz de cada laboratorio</div></div>${icon('arrow-right')}</a>`;
 
-    const today = nextSessions.length
-      ? `<div class="card"><div class="card-top"><span class="eyebrow" style="margin:0">${+nextDay === +TODAY ? 'Hoy en clase' : 'Próxima clase · ' + esc(fmtDate(nextDay))}</span><a class="chip ${nextSessions[0].block.color}" href="#/bloque/${nextSessions[0].block.id}" style="text-decoration:none">Bloque ${nextSessions[0].block.roman}</a></div>
-          <ul class="today-list">${nextSessions.map((s) => `<li><span class="n">Sesión ${esc(s.n)}</span><span>${esc(s.title)}${s.lab ? ` <span class="chip accent">${esc(s.lab)}</span>` : ''}</span></li>`).join('')}</ul></div>`
-      : `<div class="card"><span class="eyebrow">Clases</span><p>Las sesiones del curso han terminado. Queda el examen final.</p></div>`;
+    const WEEKS = BLOCKS.flatMap((b) => b.weekList);
+    const map = `<a class="card continue-card" href="#/curso"><span class="icon-tile">${icon('calendar')}</span>
+          <div class="txt"><div class="s">Mapa del curso</div><div class="t">El curso semana a semana</div><div class="s">${WEEKS.length} semanas, ${SESSIONS.length} sesiones y ${C.labs.length} laboratorios, con la documentación de cada semana</div></div>${icon('arrow-right')}</a>`;
 
     render(`
       <section class="hero">
         <div class="hero-main">
-          <p class="eyebrow">${esc(C.code)} · ${esc(C.group)}</p>
+          <p class="eyebrow">${esc(C.code)} · Sitio de estudio</p>
           <h1>${esc(C.title)}</h1>
           <p class="lead">Material de estudio de la asignatura: guías teóricas, un quiz por laboratorio con corrección inmediata, simulacros de la parte tipo test del examen y repaso de las preguntas falladas.</p>
           <div class="actions">
@@ -307,7 +277,7 @@
         </div>
       </section>
 
-      <div class="grid-2" style="margin-top:24px">${cont}${today}</div>
+      <div class="grid-2" style="margin-top:24px">${cont}${map}</div>
 
       ${sectionHead('Progreso', `<a href="#/progreso">Ver el detalle ${icon('arrow-right')}</a>`)}
       <div class="grid-4 stats">
@@ -323,7 +293,7 @@
         return `<a class="card block-card" href="#/bloque/${b.id}" style="--bc:var(--${b.color})">${icon('arrow-right', 'go')}
           <p class="eyebrow" style="color:var(--${b.color})">Bloque ${b.roman} · ${esc(b.weeks)}</p>
           <h3>${esc(b.title)}</h3><p>${esc(b.subtitle)}</p>
-          <div class="card-foot">${statusChip[b.status]}<span class="chip plain">${plural(b.sessions.length, 'sesión', 'sesiones')}</span><span class="chip plain">Quizzes ${qd}/${b.quizzes.length}</span>${b.guide && guideRead(b.guide) ? `<span class="chip plain">Guía ${guideRead(b.guide)} %</span>` : ''}</div></a>`;
+          <div class="card-foot"><span class="chip plain">${plural(b.weekList.length, 'semana', 'semanas')}</span><span class="chip plain">${plural(b.sessions.length, 'sesión', 'sesiones')}</span><span class="chip plain">Quizzes ${qd}/${b.quizzes.length}</span></div></a>`;
       }).join('')}</div>
 
       ${sectionHead('Preparar el examen')}
@@ -340,14 +310,6 @@
     const b = blockById(id);
     if (!b) return notFound();
     const labs = C.labs.filter((l) => b.sessions.some((s) => s.lab === l.id));
-    const upcoming = b.sessions.map((s) => parseDay(s.date)).find((d) => d >= TODAY);
-    const timeline = b.sessions.map((s) => {
-      const d = parseDay(s.date);
-      const cls = +d === +TODAY ? 'today' : d < TODAY ? 'past' : +d === +upcoming ? 'next' : '';
-      return `<li class="tl-item ${cls}${s.lab ? ' lab' : ''}"><span class="tl-date">${esc(s.date)}</span><span class="tl-dot"></span>
-        <div class="tl-body"><span class="n">S${esc(s.n)}</span><span class="t">${esc(s.title)}</span>${s.lab ? `<span class="chip accent">${esc(s.lab)}</span>` : ''}${cls === 'today' ? '<span class="chip ok">Hoy</span>' : cls === 'next' ? '<span class="chip">Próxima</span>' : ''}</div></li>`;
-    }).join('');
-    const gr = b.guide && G[b.guide] ? guideRead(b.guide) : 0;
     const qd = b.quizzes.filter((n) => S.quiz[n]?.attempts).length;
     const blockWrong = wrongIds().filter((qid) => QI[qid].block === b.id).length;
     render(`
@@ -355,16 +317,15 @@
         path: [[`Bloque ${b.roman}`, '']],
         eyebrow: `Bloque ${b.roman} · ${esc(b.weeks)}`, eyebrowStyle: `color:var(--${b.color})`,
         title: esc(b.title), lead: esc(b.subtitle),
-        meta: `${statusChip[b.status]}<span class="chip plain">${icon('calendar')}${plural(b.sessions.length, 'sesión', 'sesiones')} · ${esc(b.sessions[0].date)} a ${esc(b.sessions[b.sessions.length - 1].date)}</span><span class="chip plain">${plural(labs.length, 'laboratorio', 'laboratorios')}</span>`,
+        meta: `<span class="chip plain">${icon('calendar')}${plural(b.weekList.length, 'semana', 'semanas')} · sesiones ${esc(b.sessions[0].n)} a ${esc(b.sessions[b.sessions.length - 1].n)}</span><span class="chip plain">${plural(labs.length, 'laboratorio', 'laboratorios')}</span>`,
       })}
       ${b.notes ? `<div class="callout info">${icon('info')}<div><strong>Criterios de este curso</strong><ul>${b.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div></div>` : ''}
       <div class="grid-2">
         ${b.guide && G[b.guide]
-          ? `<a class="card" href="#/guia/${b.guide}${S.guide[b.guide]?.section ? '/' + encodeURIComponent(S.guide[b.guide].section) : ''}">${icon('arrow-right', 'go')}
+          ? `<a class="card" href="#/guia/${b.guide}">${icon('arrow-right', 'go')}
               <div class="card-top"><span class="icon-tile">${icon('book')}</span></div>
-              <h3>Guía teórica del bloque ${b.roman}</h3><p>${gr ? `Leído el ${gr} % de las secciones. Continuar donde se dejó.` : 'Explicación completa del bloque, con ejemplos de clase y errores habituales.'}</p>
-              ${bar(gr)}</a>`
-          : `<div class="card muted-card"><div class="card-top"><span class="icon-tile">${icon('book')}</span><span class="chip">En preparación</span></div><h3>Guía teórica del bloque ${b.roman}</h3><p>Se publicará al cerrar el bloque. Mientras tanto, las referencias son las presentaciones de cada semana y la documentación oficial.</p></div>`}
+              <h3>Guía teórica del bloque ${b.roman}</h3><p>Explicación completa del bloque, con ejemplos de clase y errores habituales.</p></a>`
+          : `<div class="card muted-card"><div class="card-top"><span class="icon-tile">${icon('book')}</span><span class="chip">En preparación</span></div><h3>Guía teórica del bloque ${b.roman}</h3><p>Se publicará al cerrar el bloque. Mientras tanto, las referencias son las presentaciones de cada semana y la documentación oficial que aparece abajo.</p></div>`}
         <div class="card">
           <div class="card-top"><span class="icon-tile">${icon('check-square')}</span></div>
           <h3>Práctica del bloque</h3>
@@ -375,10 +336,30 @@
       </div>
       ${sectionHead('Quizzes del bloque')}
       <div class="grid">${b.quizzes.map(quizCard).join('')}</div>
-      ${sectionHead('Sesiones')}
-      <div class="card"><ol class="timeline">${timeline}</ol></div>
+      ${sectionHead('Semanas y sesiones')}
+      ${weeksHtml(b)}
       ${sectionHead('Laboratorios')}
       ${labRows(labs)}`, `Bloque ${b.roman}`);
+  }
+
+  // ---------- Weeks (same order as the Canvas modules) ----------
+  function weeksHtml(b) {
+    return `<div class="weeks">${b.weekList.map((w) => `<section class="card week" id="semana-${w.n}" style="--bc:var(--${b.color})">
+      <header class="week-head"><span class="week-n">Semana ${w.n}</span><h3>${esc(w.title)}</h3></header>
+      <ol class="week-sessions">${w.sessions.map((s) => `<li class="${s.lab ? 'lab' : ''}"><span class="n">Sesión ${esc(s.n)}</span><span class="t">${esc(s.title)}</span>${s.lab ? `<span class="chip accent">${esc(s.lab)}</span>` : ''}</li>`).join('')}</ol>
+      ${w.milestone ? `<p class="week-note">${icon('flag')}${esc(w.milestone)}</p>` : ''}
+      ${w.links.length ? `<div class="week-links">${w.links.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${esc(t)}${icon('external')}</a>`).join('')}</div>` : ''}
+    </section>`).join('')}</div>`;
+  }
+  function coursePage() {
+    render(`
+      ${pageHead({ path: [['Mapa del curso', '']], eyebrow: 'Curso', title: 'Mapa del curso',
+        lead: 'El curso semana a semana, en el mismo orden que Canvas: las sesiones de cada semana, su laboratorio y la documentación de referencia.',
+        meta: `<span class="chip plain">${plural(BLOCKS.reduce((a, b) => a + b.weekList.length, 0), 'semana', 'semanas')}</span><span class="chip plain">${plural(SESSIONS.length, 'sesión', 'sesiones')}</span><span class="chip plain">${plural(C.labs.length, 'laboratorio', 'laboratorios')}</span>` })}
+      ${BLOCKS.map((b) => `${sectionHead(`<span style="color:var(--${b.color})">Bloque ${b.roman}</span> · ${esc(b.title)}`, `<a href="#/bloque/${b.id}">Ver el bloque ${icon('arrow-right')}</a>`)}${weeksHtml(b)}`).join('')}
+      ${sectionHead('Prácticas')}
+      <div class="grid-2">${C.practices.map((x) => `<div class="card"><div class="card-top"><span class="icon-tile">${icon('code')}</span><span class="chip plain">${esc(x.name)}</span></div><h3>${esc(x.title)}</h3><p>${esc(x.detail)}</p></div>`).join('')}</div>
+      <p class="muted" style="margin-top:14px;font-size:.88rem">Los enunciados de las prácticas, las presentaciones de cada semana y las entregas están en Canvas.</p>`, 'Mapa del curso');
   }
 
   // ---------- Guide ----------
@@ -387,9 +368,7 @@
     if (!g) return notFound();
     const b = BLOCKS.find((x) => x.guide === id);
     const words = g.html.replace(/<[^>]+>/g, ' ').split(/\s+/).length;
-    const st = S.guide[id] || (S.guide[id] = { read: {} });
-    st.read = st.read || {};
-    const tocHtml = g.toc.map((t) => `<a class="l${t.level}${st.read[t.id] ? ' read' : ''}" href="#/guia/${id}/${encodeURIComponent(t.id)}" data-id="${esc(t.id)}">${esc(t.text)}</a>`).join('');
+    const tocHtml = g.toc.map((t) => `<a class="l${t.level}" href="#/guia/${id}/${encodeURIComponent(t.id)}" data-id="${esc(t.id)}">${esc(t.text)}</a>`).join('');
     render(`
       <div class="guide-head">
         ${crumbs([[`Bloque ${b.roman}`, `#/bloque/${b.id}`], ['Guía teórica', '']])}
@@ -397,7 +376,6 @@
         <h1>Guía teórica del bloque ${b.roman}</h1>
         <p class="lead">${esc(b.title)}: ${esc(b.subtitle)}.</p>
         <div class="meta-row"><span class="chip plain">${icon('clock')}${Math.round(words / 200)} min de lectura</span><span class="chip plain">${icon('list')}${plural(g.toc.filter((t) => t.level === 2).length, 'capítulo', 'capítulos')}</span><button class="chip plain" id="print-guide" type="button" style="cursor:pointer">Imprimir o guardar en PDF</button></div>
-        <div class="guide-progress"><span id="gp-label">${guideRead(id)} % leído</span>${bar(guideRead(id))}</div>
       </div>
       <details class="toc-mobile card" style="padding:0"><summary>${icon('list')}Índice de la guía${icon('chevron', 'ri-chev')}</summary><nav class="toc-list" aria-label="Índice">${tocHtml}</nav></details>
       <div class="guide-layout">
@@ -442,13 +420,11 @@
 
     const tocLinks = $$('.guide-toc a, .toc-mobile a');
     on($('.toc-mobile'), 'click', (e) => { if (e.target.closest('a')) $('.toc-mobile').open = false; });
-    const progressSpan = $('#read-progress span');
     let active = null, ticking = false;
+    const sig = view.ac.signal;
     const update = () => {
       ticking = false;
-      const r = art.getBoundingClientRect();
-      const total = r.height - window.innerHeight * 0.6;
-      progressSpan.style.width = Math.max(0, Math.min(100, (-r.top / Math.max(total, 1)) * 100)) + '%';
+      if (sig.aborted || !art.isConnected) return; // a frame queued before leaving the guide
       let cur = null;
       for (const h of heads) { if (h.getBoundingClientRect().top < 170) cur = h; else break; }
       if (cur && cur.id !== active) {
@@ -456,11 +432,6 @@
         tocLinks.forEach((a) => a.classList.toggle('active', a.dataset.id === active));
         const act = $('.guide-toc a.active');
         if (act) { const box = $('.guide-toc'); const ar = act.getBoundingClientRect(), br = box.getBoundingClientRect(); if (ar.top < br.top + 40 || ar.bottom > br.bottom - 40) box.scrollTop += ar.top - br.top - br.height / 3; }
-        if (!st.read[active]) { st.read[active] = 1; tocLinks.forEach((a) => { if (a.dataset.id === active) a.classList.add('read'); }); }
-        st.section = active;
-        const p = guideRead(id);
-        $('#gp-label').textContent = `${p} % leído`;
-        $('.guide-progress .bar span').style.width = p + '%';
         setLast(`#/guia/${id}/${encodeURIComponent(active)}`, cur.textContent.trim(), `Guía del bloque ${b.roman}`);
         history.replaceState(null, '', `#/guia/${id}/${encodeURIComponent(active)}`);
       }
@@ -487,11 +458,7 @@
         lead: 'Un quiz por laboratorio. Cada pregunta se corrige al momento y muestra la explicación de la respuesta correcta. Se puede salir a mitad: el quiz se retoma donde se dejó.',
         meta: `<span class="chip plain">${done} de ${n} hechos</span><span class="chip plain">${Object.values(Q).reduce((a, q) => a + q.questions.length, 0)} preguntas</span><span class="chip plain">Atajos de teclado: A–D y Intro</span>` })}
       ${BLOCKS.map((b) => `${sectionHead(`<span style="color:var(--${b.color})">Bloque ${b.roman}</span> · ${esc(b.title)}`, `<a href="#/bloque/${b.id}">Ver el bloque ${icon('arrow-right')}</a>`)}<div class="grid">${b.quizzes.map(quizCard).join('')}</div>`).join('')}
-      ${sectionHead('Más práctica')}
-      <div class="grid">
-        <a class="card" href="#/simulacros">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('clipboard')}</span></div><h3>Simulacros del examen</h3><p>${E.length} simulacros fijos y uno aleatorio, con el formato de la parte tipo test.</p></a>
-        <a class="card" href="#/repaso">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('rotate')}</span></div><h3>Repaso de errores</h3><p>${wrongIds().length ? `${plural(wrongIds().length, 'pregunta pendiente', 'preguntas pendientes')} de acertar.` : 'Sin preguntas pendientes por ahora.'}</p></a>
-      </div>`, 'Quizzes');
+`, 'Quizzes');
   }
 
   // ---------- Question runner (quizzes and error review) ----------
@@ -884,43 +851,17 @@
     on($('#grade-s'), 'click', () => { if (!confirmArmed && Object.keys(cur.picks).length < qs.length) $('#exam-actions').scrollIntoView({ behavior: 'smooth', block: 'center' }); grade(); });
   }
 
-  // ---------- Exam info ----------
-  function examPage() {
-    const e = C.exam;
-    render(`
-      ${pageHead({ path: [['Examen final', '']], eyebrow: 'Evaluación', title: 'Examen final', lead: `${esc(e.label)} · ${esc(e.room)}`})}
-      <div class="grid-4">
-        <div class="card stat"><span class="k">Fecha</span><span class="v" style="font-size:1.15rem">${esc(e.label.split(',')[0])}</span><span class="d">${esc((e.label.split(',')[1] || '').trim())} h</span></div>
-        <div class="card stat"><span class="k">Aula</span><span class="v" style="font-size:1.15rem">${esc(e.room)}</span></div>
-        <div class="card stat"><span class="k">Peso</span><span class="v" style="font-size:1.15rem">${esc(e.weight)}</span></div>
-        <div class="card stat"><span class="k">Nota mínima</span><span class="v" style="font-size:1.15rem">5 / 10</span><span class="d">${esc(e.minimum)}</span></div>
-      </div>
-      ${sectionHead('Estructura')}
-      <div class="grid-2">${e.parts.map((p, i) => `<div class="card"><div class="card-top"><span class="icon-tile">${icon(i ? 'code' : 'check-square')}</span><span class="chip accent">${esc(p.points)}</span></div><h3>${esc(p.name)}</h3><p>${esc(p.detail)}</p>
-        <div class="card-foot">${i ? '<a class="btn sm secondary" href="#/recursos">Practicar con los laboratorios</a>' : '<a class="btn sm secondary" href="#/simulacros">Hacer un simulacro</a>'}</div></div>`).join('')}</div>
-      <div class="callout info">${icon('calendar')}<div><strong>Sesión de repaso.</strong> ${esc(e.review.label)} (sesión ${esc(e.review.session)}).</div></div>
-      ${sectionHead('Simulacros de la parte tipo test', `<a href="#/simulacros">Todos ${icon('arrow-right')}</a>`)}
-      <div class="grid">${E.map(examCard).join('')}${randomExamCard()}</div>
-      ${sectionHead('Parte práctica')}
-      <p class="lead" style="font-size:1rem">La mejor preparación para la parte práctica son los laboratorios: repetir cada uno desde el enunciado, sin consultar la solución, y compararlo después con ella.</p>
-      ${labRows(C.labs)}`, 'Examen');
-  }
-
   // ---------- Resources ----------
   function resourcesPage() {
-    const s = C.coordinatorSite;
     render(`
-      ${pageHead({ path: [['Laboratorios y recursos', '']], eyebrow: 'Recursos', title: 'Laboratorios y recursos', lead: 'Enunciados y soluciones de los laboratorios, documentación oficial de las tecnologías del curso y material complementario.' })}
+      ${pageHead({ path: [['Laboratorios y recursos', '']], eyebrow: 'Recursos', title: 'Laboratorios y recursos', lead: 'Enunciados y soluciones de los laboratorios, repositorios del curso y documentación oficial de cada semana.' })}
       ${sectionHead('Laboratorios')}
       ${labRows(C.labs)}
-      ${sectionHead('Documentación oficial')}
-      <div class="grid-3">${C.docs.map((d) => `<div class="card"><h3>${esc(d.group)}</h3><div style="display:grid;gap:2px;margin-top:8px">${d.items.map(([t, u]) => `<a class="nav-link" style="padding:7px 8px;margin:0 -8px" href="${u}" target="_blank" rel="noopener"><span>${esc(t)}</span>${icon('external', 'muted')}</a>`).join('')}</div></div>`).join('')}</div>
-      ${sectionHead('Sitio de estudio del coordinador')}
-      <div class="card">
-        <p>El coordinador de la asignatura mantiene un sitio de estudio con tarjetas de concepto, herramientas interactivas y preguntas de autoevaluación. Es un recurso complementario.</p>
-        <div class="callout warn">${icon('alert')}<div><strong>Diferencias con lo trabajado en este grupo</strong><ul>${s.warnings.map((w) => `<li>${esc(w)}</li>`).join('')}</ul></div></div>
-        <a class="btn secondary" href="${s.url}" target="_blank" rel="noopener">Abrir el sitio del coordinador ${icon('external')}</a>
-      </div>`, 'Recursos');
+      ${sectionHead('Repositorios y material general')}
+      <div class="card week-links standalone">${C.resources.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${esc(t)}${icon('external')}</a>`).join('')}</div>
+      ${sectionHead('Documentación por semana', `<a href="#/curso">Mapa del curso ${icon('arrow-right')}</a>`)}
+      <div class="grid-3">${BLOCKS.map((b) => `<div class="card" style="--bc:var(--${b.color})"><p class="eyebrow" style="color:var(--${b.color})">Bloque ${b.roman}</p><h3>${esc(b.title)}</h3>
+        ${b.weekList.filter((w) => w.links.length).map((w) => `<div class="doc-week"><span class="doc-week-n">Semana ${w.n} · ${esc(w.title)}</span>${w.links.map(([t, u]) => `<a class="nav-link" href="${u}" target="_blank" rel="noopener"><span>${esc(t)}</span>${icon('external', 'muted')}</a>`).join('')}</div>`).join('')}</div>`).join('')}</div>`, 'Recursos');
   }
 
   // ---------- Progress ----------
@@ -937,21 +878,19 @@
     }).join('');
     render(`
       ${pageHead({ path: [['Progreso', '']], eyebrow: 'Seguimiento', title: 'Progreso', lead: 'Resultados guardados en este navegador. No se envían a ningún sitio ni cuentan para la evaluación: si se cambia de navegador o de dispositivo, se empieza de cero.' })}
-      ${sectionHead('Guías teóricas')}
-      <div class="grid-2">${BLOCKS.filter((b) => b.guide && G[b.guide]).map((b) => `<a class="card" href="#/guia/${b.guide}">${icon('arrow-right', 'go')}<h3>Guía del bloque ${b.roman}</h3><p>${guideRead(b.guide)} % de las secciones leídas</p><div style="margin-top:12px">${bar(guideRead(b.guide))}</div></a>`).join('')}</div>
       ${sectionHead('Quizzes')}
       <div class="table-wrap"><table><thead><tr><th>Quiz</th><th class="num">Intentos</th><th class="num">Último</th><th class="num">Mejor</th><th>Nivel</th><th class="num">Fecha</th></tr></thead><tbody>${rows}</tbody></table></div>
       ${sectionHead('Simulacros')}
       <div class="table-wrap"><table><thead><tr><th>Simulacro</th><th class="num">Intentos</th><th class="num">Último</th><th class="num">Mejor</th><th class="num">Fecha</th></tr></thead><tbody>${exRows}</tbody></table></div>
       ${sectionHead('Datos')}
       <div class="card" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
-        <p style="margin:0;max-width:60ch">Borrar el progreso elimina resultados, quizzes a medias, lectura de las guías y la lista de repaso de este navegador. No se puede deshacer.</p>
+        <p style="margin:0;max-width:60ch">Borrar el progreso elimina resultados, quizzes a medias y la lista de repaso de este navegador. No se puede deshacer.</p>
         <button class="btn danger" id="reset" type="button">${icon('trash')}Borrar todo el progreso</button>
       </div>`, 'Progreso');
     on($('#reset'), 'click', () => {
       if (!confirm('¿Borrar todo el progreso guardado en este navegador? No se puede deshacer.')) return;
-      for (const k of ['quiz', 'exam', 'wrong', 'guide', 'current']) S[k] = {};
-      delete S.last; save(true);
+      for (const k of ['quiz', 'exam', 'wrong', 'current']) S[k] = {};
+      delete S.last; delete S.guide; save(true);
       try { localStorage.removeItem('g247-progress'); } catch { /* ignore */ }
       toast('Progreso borrado'); renderNav('progreso'); progressPage();
     });
@@ -966,7 +905,7 @@
   function buildIndex() {
     const items = [];
     const add = (o) => { o.nt = fold(o.title); o.nx = fold(o.text || ''); items.push(o); };
-    [['Examen final', '#/examen', 'fecha aula estructura parte tipo test practica nota minima peso'], ['Simulacros del examen', '#/simulacros', 'simulacro test aleatorio'],
+    [['Mapa del curso', '#/curso', 'semanas sesiones calendario canvas practicas'], ['Simulacros del examen', '#/simulacros', 'simulacro test aleatorio examen'],
       ['Quizzes por laboratorio', '#/quizzes', 'quiz autoevaluacion'], ['Repaso de errores', '#/repaso', 'falladas errores repasar'],
       ['Laboratorios y recursos', '#/recursos', 'laboratorio enunciado solucion documentacion mdn'], ['Progreso', '#/progreso', 'resultados borrar progreso estadisticas']]
       .forEach(([t, h, k]) => add({ type: 'page', title: t, sub: 'Página', href: h, text: k, ic: 'chevron' }));
@@ -982,9 +921,10 @@
       }
     }
     items.filter((o) => o.type === 'guide').forEach((o) => { o.nt = fold(o.title); o.nx = fold(o.text); });
-    for (const s of SESSIONS) add({ type: 'session', title: `Sesión ${s.n}: ${s.title}`, sub: `Bloque ${s.block.roman} · ${s.date}`, href: `#/bloque/${s.block.id}`, text: s.lab || '', ic: 'calendar' });
+    for (const s of SESSIONS) add({ type: 'session', title: `Sesión ${s.n}: ${s.title}`, sub: `Bloque ${s.block.roman} · Semana ${s.week}`, href: `#/curso/${s.week}`, text: s.lab || '', ic: 'calendar' });
     for (const l of C.labs) add({ type: 'lab', title: `${l.id} · ${l.title}`, sub: l.brief ? 'Enunciado en GitHub' : 'Próximamente', href: l.brief || '#/recursos', ext: !!l.brief, text: 'laboratorio', ic: 'code' });
-    for (const d of C.docs) for (const [t, u] of d.items) add({ type: 'doc', title: t, sub: `Documentación · ${d.group}`, href: u, ext: true, text: '', ic: 'external' });
+    for (const b of BLOCKS) for (const w of b.weekList) for (const [t, u] of w.links) add({ type: 'doc', title: t, sub: `Documentación · Semana ${w.n}`, href: u, ext: true, text: '', ic: 'external' });
+    for (const [t, u] of C.resources) add({ type: 'doc', title: t, sub: 'Recursos del curso', href: u, ext: true, text: '', ic: 'external' });
     for (const [id, e] of Object.entries(QI)) {
       const q = e.q;
       add({ type: 'question', title: plain(q.q), sub: e.quiz ? `Quiz ${e.quiz} · ${Q[e.quiz].title}` : `Simulacro ${e.exam}`, href: e.quiz ? `#/quiz/${e.quiz}` : `#/simulacro/${e.exam}`, text: plain([...(q.choices || []), q.why || ''].join(' ')), ic: 'check-square', id });
@@ -1129,12 +1069,14 @@
       if (page === 'bloque') return 'b' + arg;
       if (page === 'guia') return 'g-' + arg;
       if (page === 'quiz') return 'quizzes';
+      if (page === 'examen') return 'home';
       if (page === 'simulacro') return 'simulacros';
       return page;
     };
     currentKey = keyFor();
     renderNav(currentKey);
-    if (!page) return home();
+    if (page === 'examen') history.replaceState(null, '', '#/');
+    if (!page || page === 'examen') return home();
     switch (page) {
       case 'bloque': return blockPage(arg);
       case 'guia': currentGuide = arg; return guidePage(arg, a3);
@@ -1143,7 +1085,7 @@
       case 'simulacros': return simulacrosPage();
       case 'simulacro': return simulacroPage(arg);
       case 'repaso': return arg === 'practicar' ? reviewRun(a3) : reviewPage();
-      case 'examen': return examPage();
+      case 'curso': coursePage(); if (arg) document.getElementById('semana-' + arg)?.scrollIntoView({ block: 'start' }); return;
       case 'recursos': return resourcesPage();
       case 'progreso': return progressPage();
       default: return notFound();

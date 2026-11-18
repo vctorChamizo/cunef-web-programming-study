@@ -1,85 +1,133 @@
-// Course data for the study site. Hand-written from the cunef/ corpus; every fact carries its
-// source in a comment. Sessions and dates: 03-calendario/planificacion-1c-iacd-a.md.
-// Exam: 04-contexto/04-calendario-horarios-y-aulas.md [V-110] and 03-asignatura-g247.md [D-01 §3.4].
+// Course data for the study site. Hand-written from the cunef/ corpus. The site is shared by the
+// groups of both semesters, so it carries no group, no calendar dates and no exam date: the course
+// is organised by week and session, in the same order as the Canvas course.
+// Weeks and sessions: 03-calendario/planificacion-1c-iacd-a.md (numbering [V-244]); the week titles
+// and the reference links of each week follow the Canvas modules ("Semana 1" to "Semana 11").
 // Labs: 01-asignaturas/05-laboratorios/estado-publicacion.md (public briefs and solutions).
 'use strict';
 const LABS_REPO = 'https://github.com/vctorChamizo/cunef-web-programming-labs/tree/main/labs/';
 window.COURSE = {
   title: 'Programación de aplicaciones Web',
   code: 'G247',
-  group: 'IACD-A · curso 2026-27',
-  exam: {
-    date: '2026-12-22T12:00:00+01:00', // [V-110]
-    label: 'Martes 22 de diciembre de 2026, 12:00',
-    room: 'Aula PIR 0.11',
-    weight: '60 % de la nota final',
-    minimum: 'Calificación mínima de 5 sobre 10 en el examen para aprobar la asignatura', // [D-01]
-    parts: [ // [D-01 §3.4]
-      { name: 'Parte tipo test', points: '4 puntos', detail: '8 preguntas de 0,5 puntos cada una. Las respuestas incorrectas no descuentan.' },
-      { name: 'Parte práctica', points: '6 puntos', detail: 'Ejercicios de programación sobre el temario de la asignatura. La base de datos es PostgreSQL, con SQL.' }, // [V-276]
-    ],
-    review: { session: 42, label: 'Miércoles 2 de diciembre: repaso general y preparación del examen' },
-  },
   blocks: [
     {
       id: 1, roman: 'I', title: 'Fundamentos del navegador', subtitle: 'HTML, CSS, JavaScript y el DOM', weeks: 'Semanas 1 a 4',
       guide: 'I', quizzes: [1, 2, 3],
-      sessions: [
-        { n: '1', date: '1 sep', title: 'Presentación de la asignatura y arquitectura cliente-servidor' },
-        { n: '2', date: '1 sep', title: 'HTML semántico' },
-        { n: '3', date: '2 sep', title: 'Laboratorio 1: estructurar una página. Introducción a Git y GitHub', lab: 'L1' },
-        { n: '4', date: '8 sep', title: 'Selectores CSS y modelo de caja' },
-        { n: '5', date: '8 sep', title: 'Flexbox y Grid' },
-        { n: '6', date: '9 sep', title: 'Laboratorio 2: página estática responsive', lab: 'L2' },
-        { n: '7', date: '15 sep', title: 'JavaScript: variables y tipos de datos' },
-        { n: '8', date: '15 sep', title: 'JavaScript: estructuras de control y funciones' },
-        { n: '9', date: '16 sep', title: 'Laboratorio 3: lógica y funciones', lab: 'L3' },
-        { n: '10', date: '22 sep', title: 'Manipulación del DOM' },
-        { n: '11', date: '22 sep', title: 'Práctica de integración: lista de tareas interactiva' },
-        { n: '12', date: '23 sep', title: 'Repaso del bloque I' },
+      weekList: [
+        { n: 1, title: 'HTML: estructura de una página',
+          sessions: [
+            { n: '1', title: 'Presentación de la asignatura y arquitectura cliente-servidor' },
+            { n: '2', title: 'HTML semántico' },
+            { n: '3', title: 'Laboratorio 1: estructurar una página. Introducción a Git y GitHub', lab: 'L1' },
+          ],
+          links: [['HTML — Documentación oficial (MDN)', 'https://developer.mozilla.org/es/docs/Web/HTML']] },
+        { n: 2, title: 'CSS: cajas y layout',
+          sessions: [
+            { n: '4', title: 'Selectores CSS y modelo de caja' },
+            { n: '5', title: 'Flexbox y Grid' },
+            { n: '6', title: 'Laboratorio 2: página estática responsive', lab: 'L2' },
+          ],
+          links: [['CSS — Documentación oficial (MDN)', 'https://developer.mozilla.org/es/docs/Web/CSS'], ['Flexbox Froggy — práctica interactiva de Flexbox', 'https://flexboxfroggy.com/#es']] },
+        { n: 3, title: 'JavaScript: fundamentos',
+          sessions: [
+            { n: '7', title: 'JavaScript: variables y tipos de datos' },
+            { n: '8', title: 'JavaScript: estructuras de control y funciones' },
+            { n: '9', title: 'Laboratorio 3: lógica y funciones', lab: 'L3' },
+          ],
+          links: [['JavaScript — Documentación oficial (MDN)', 'https://developer.mozilla.org/es/docs/Web/JavaScript'], ['JavaScript — Cheatsheet', 'https://www.javascriptcheatsheet.org/']] },
+        { n: 4, title: 'DOM',
+          sessions: [
+            { n: '10', title: 'Manipulación del DOM' },
+            { n: '11', title: 'Práctica de integración: lista de tareas interactiva' },
+            { n: '12', title: 'Repaso del bloque I' },
+          ],
+          links: [['DOM — Documentación oficial (MDN)', 'https://developer.mozilla.org/es/docs/Web/API/Document_Object_Model']] },
       ],
     },
     {
       id: 2, roman: 'II', title: 'Backend', subtitle: 'Node.js, Express, PostgreSQL y autenticación', weeks: 'Semanas 5 a 9',
       guide: 'II', quizzes: [4, 5, 6, 7],
       notes: ['La base de datos del curso, y la del examen, es PostgreSQL: SQL desde Node.js con el paquete pg.'], // [V-214, V-276]
-      sessions: [
-        { n: '13', date: '29 sep', title: 'Node.js, npm y estructura de un proyecto' },
-        { n: '14', date: '29 sep', title: 'Express: rutas y middleware' },
-        { n: '15', date: '30 sep', title: 'Laboratorio 4: primeras rutas con Express', lab: 'L4' },
-        { n: '16', date: '13 oct', title: 'Controladores y manejo de errores' },
-        { n: '17', date: '13 oct', title: 'Principios de diseño de APIs REST' },
-        { n: '18', date: '14 oct', title: 'Laboratorio 5: API CRUD en memoria', lab: 'L5' },
-        { n: '20', date: '19 oct', title: 'Modelo relacional y PostgreSQL' },
-        { n: '21', date: '19 oct', title: 'Consultas SQL y migraciones' },
-        { n: '22', date: '20 oct', title: 'Laboratorio 6: SQL y capa de modelos', lab: 'L6' },
-        { n: '25', date: '27 oct', title: 'Autenticación: sesiones y JWT' },
-        { n: '26', date: '28 oct', title: 'Cifrado de contraseñas y validación' },
-        { n: '27', date: '28 oct', title: 'Laboratorio 7: paginación y control de permisos', lab: 'L7' },
-        { n: '30', date: '4 nov', title: 'Repaso de la Práctica 1 y otros estilos de API' },
+      weekList: [
+        { n: 5, title: 'Node.js y Express',
+          sessions: [
+            { n: '13', title: 'Node.js, npm y estructura de un proyecto' },
+            { n: '14', title: 'Express: rutas y middleware' },
+            { n: '15', title: 'Laboratorio 4: primeras rutas con Express', lab: 'L4' },
+          ],
+          milestone: 'Se presenta la Práctica 1: Foundations API.',
+          links: [['Express.js — Documentación oficial', 'https://expressjs.com/es/'], ['Node.js — Documentación oficial', 'https://nodejs.org/docs/latest/api/']] },
+        { n: 6, title: 'Controladores, errores y API REST',
+          sessions: [
+            { n: '16', title: 'Controladores y manejo de errores' },
+            { n: '17', title: 'Principios de diseño de APIs REST' },
+            { n: '18', title: 'Laboratorio 5: API CRUD en memoria', lab: 'L5' },
+          ],
+          links: [['Express — Routing', 'https://expressjs.com/es/guide/routing.html'], ['Express — Control de errores', 'https://expressjs.com/es/guide/error-handling.html']] },
+        { n: 7, title: 'SQL y modelos',
+          sessions: [
+            { n: '20', title: 'Modelo relacional y PostgreSQL' },
+            { n: '21', title: 'Consultas SQL y migraciones' },
+            { n: '22', title: 'Laboratorio 6: SQL y capa de modelos', lab: 'L6' },
+          ],
+          links: [['PostgreSQL — Documentación oficial', 'https://www.postgresql.org/docs/current/'], ['node-postgres (pg) — Documentación oficial', 'https://node-postgres.com/'], ['DBML / dbdiagram — Documentación oficial', 'https://dbdiagram.io/docs'], ['Imagen de Docker de PostgreSQL', 'https://hub.docker.com/_/postgres']] },
+        { n: 8, title: 'Autenticación y seguridad',
+          sessions: [
+            { n: '25', title: 'Autenticación: sesiones y JWT' },
+            { n: '26', title: 'Cifrado de contraseñas y validación' },
+            { n: '27', title: 'Laboratorio 7: paginación y control de permisos', lab: 'L7' },
+          ],
+          links: [['JWT — Documentación oficial', 'https://jwt.io/introduction'], ['Zod — Documentación oficial', 'https://zod.dev/'], ['jsonwebtoken — Documentación oficial', 'https://github.com/auth0/node-jsonwebtoken#readme'], ['bcrypt.js — Documentación oficial', 'https://github.com/dcodeIO/bcrypt.js#readme']] },
+        { n: 9, title: 'Entrega de la Práctica 1 y repaso del bloque II',
+          sessions: [
+            { n: '29', title: 'Entrega de la Práctica 1 y presentación de la Práctica 2' },
+            { n: '30', title: 'Repaso de la Práctica 1 y otros estilos de API' },
+          ],
+          links: [] },
       ],
     },
     {
       id: 3, roman: 'III', title: 'Frontend con React', subtitle: 'Componentes, hooks, datos y navegación', weeks: 'Semanas 10 a 13',
       guide: null, quizzes: [8, 9, 10],
-      sessions: [
-        { n: '31', date: '10 nov', title: 'React: JSX, componentes, props y estado' },
-        { n: '32', date: '10 nov', title: 'Laboratorio 8: primeros componentes', lab: 'L8' },
-        { n: '33', date: '11 nov', title: 'Hooks: useState, useEffect y useContext' },
-        { n: '34', date: '17 nov', title: 'Comunicación con APIs: Axios, async/await y estados de carga y error' },
-        { n: '35', date: '17 nov', title: 'React Router y navegación' },
-        { n: '36', date: '18 nov', title: 'Laboratorio 9: hooks en la práctica', lab: 'L9' },
-        { n: '37', date: '24 nov', title: 'Gestión de estado: elevar el estado y Context API' },
-        { n: '38', date: '24 nov', title: 'Estilos y extras' },
-        { n: '39', date: '25 nov', title: 'Laboratorio 10: routing y estado', lab: 'L10' },
-        { n: '42', date: '2 dic', title: 'Repaso general y preparación del examen' },
-      ],
       notes: [ // [V-261, V-262]
         'Las peticiones a la API se hacen con Axios, con un cliente creado con axios.create y la URL base en VITE_API_URL.',
         'Las promesas se trabajan con async/await.',
-        'La guía del bloque III se publicará al cerrar el bloque. Mientras tanto, las referencias son las presentaciones de cada semana y la documentación oficial.',
+      ],
+      weekList: [
+        { n: 10, title: 'Fundamentos de React y hooks',
+          sessions: [
+            { n: '31', title: 'React: JSX, componentes, props y estado' },
+            { n: '32', title: 'Laboratorio 8: primeros componentes', lab: 'L8' },
+            { n: '33', title: 'Hooks: useState, useEffect y useContext' },
+          ],
+          links: [['React — Documentación oficial', 'https://es.react.dev/learn'], ['Vite — Documentación oficial', 'https://vite.dev/guide/'], ['Material UI — Documentación oficial', 'https://mui.com/material-ui/getting-started/'], ['shadcn/ui — Documentación oficial', 'https://ui.shadcn.com/docs'], ['Ant Design — Documentación oficial', 'https://ant.design/docs/react/introduce']] },
+        { n: 11, title: 'Datos y navegación en React',
+          sessions: [
+            { n: '34', title: 'Comunicación con APIs: Axios, async/await y estados de carga y error' },
+            { n: '35', title: 'React Router y navegación' },
+            { n: '36', title: 'Laboratorio 9: hooks en la práctica', lab: 'L9' },
+          ],
+          links: [['Axios — Documentación oficial', 'https://axios-http.com/es/docs/intro'], ['React Router — Documentación oficial', 'https://reactrouter.com/start/library/installation']] },
+        { n: 12, title: 'Gestión de estado y estilos',
+          sessions: [
+            { n: '37', title: 'Gestión de estado: elevar el estado y Context API' },
+            { n: '38', title: 'Estilos y extras' },
+            { n: '39', title: 'Laboratorio 10: routing y estado', lab: 'L10' },
+          ],
+          links: [] },
+        { n: 13, title: 'Presentaciones de la Práctica 2 y repaso general',
+          sessions: [
+            { n: '40', title: 'Presentaciones de la Práctica 2' },
+            { n: '41', title: 'Presentaciones de la Práctica 2' },
+            { n: '42', title: 'Repaso general y preparación del examen' },
+          ],
+          links: [] },
       ],
     },
+  ],
+  practices: [
+    { name: 'Práctica 1', title: 'Foundations API', detail: 'API REST con operaciones CRUD y datos en memoria, con un cliente en HTML, CSS y JavaScript. Se presenta en la semana 5 y se entrega en la semana 9.' },
+    { name: 'Práctica 2', title: 'Full-Stack Application', detail: 'Evolución del mismo proyecto: base de datos PostgreSQL, autenticación con JWT y frontend en React con React Router. Se presenta en la semana 9 y se expone en la semana 13.' },
   ],
   labs: [
     { id: 'L1', title: 'Estructurar una página con HTML semántico', dir: 'lab-01-semantic-html', solution: true },
@@ -93,34 +141,10 @@ window.COURSE = {
     { id: 'L9', title: 'Hooks en la práctica', dir: 'lab-09-react-hooks', solution: false },
     { id: 'L10', title: 'Routing y gestión de estado', dir: null, solution: false },
   ].map((l) => ({ ...l, brief: l.dir ? LABS_REPO + l.dir : null, solutionUrl: l.dir && l.solution ? LABS_REPO + l.dir + '/solution' : null })),
-  docs: [
-    { group: 'Navegador', items: [
-      ['MDN: HTML', 'https://developer.mozilla.org/es/docs/Web/HTML'],
-      ['MDN: CSS', 'https://developer.mozilla.org/es/docs/Web/CSS'],
-      ['MDN: JavaScript', 'https://developer.mozilla.org/es/docs/Web/JavaScript'],
-      ['MDN: el DOM', 'https://developer.mozilla.org/es/docs/Web/API/Document_Object_Model'],
-    ] },
-    { group: 'Servidor', items: [
-      ['Node.js', 'https://nodejs.org/docs/latest/api/'],
-      ['Express', 'https://expressjs.com/es/'],
-      ['PostgreSQL', 'https://www.postgresql.org/docs/'],
-      ['node-postgres (pg)', 'https://node-postgres.com/'],
-      ['JSON Web Tokens', 'https://jwt.io/introduction'],
-    ] },
-    { group: 'React', items: [
-      ['React', 'https://es.react.dev/learn'],
-      ['Axios', 'https://axios-http.com/es/docs/intro'],
-      ['React Router', 'https://reactrouter.com/'],
-      ['Vite', 'https://vite.dev/guide/'],
-    ] },
+  // General resources (Canvas module "Recursos").
+  resources: [
+    ['Repositorio de los laboratorios', 'https://github.com/vctorChamizo/cunef-web-programming-labs'],
+    ['Repositorio de ejemplos de clase', 'https://github.com/vctorChamizo/g247-labs-IACD-A-2026-27'],
+    ['Git — Cheat Sheet', 'https://education.github.com/git-cheat-sheet-education.pdf'],
   ],
-  coordinatorSite: { // [M-12, V-272]
-    url: 'https://ture2.github.io/web-programming/#/',
-    warnings: [
-      'En la sección de peticiones de datos se usa fetch; en este curso se usa Axios.',
-      'La conexión a la base de datos desde Node se hace con SQLite; en este curso, y en el examen, se usa PostgreSQL con pg.',
-      'La sección de MongoDB no forma parte del temario de este grupo ni del examen.',
-      'La limpieza de efectos, AbortController y las rutas anidadas con Outlet no se han trabajado en este curso.',
-    ],
-  },
 };
