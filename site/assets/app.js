@@ -1,11 +1,23 @@
 'use strict';
-// G247 study site: hash router, pages, quiz and practice-exam engines, search and local progress.
-// Plain JavaScript, no dependencies. Content comes from data/*.js (COURSE, QUIZZES, EXAMS, GUIDES).
+// G247 study site: router, pages, quiz and practice-exam engines, search and local progress.
+// Plain JavaScript, no dependencies. Content comes from data/*.js: COURSE, QUIZZES, GUIDES,
+// EXERCISES, and PRACTICE_BANK and SIMULACROS (practice-bank.js).
 (() => {
   const C = window.COURSE, Q = window.QUIZZES || {}, G = window.GUIDES || {};
-  const X = window.EXERCISES || [], XB = Object.fromEntries(X.map((x) => [x.id, x]));
-  // Practice exams: the generated ones (quizzes.js) plus the complete mock exams (mock-exams.js).
-  const E = [...(window.EXAMS || []), ...(window.MOCK_EXAMS || [])];
+  // Practice bank: register fixes, extra questions for the generated quizzes and the quizzes without a lab.
+  const PB = window.PRACTICE_BANK || {};
+  for (const [k, qs] of Object.entries(PB.add || {})) if (Q[k]) Q[k] = { ...Q[k], questions: [...Q[k].questions, ...qs] };
+  for (const [k, quiz] of Object.entries(PB.quizzes || {})) Q[k] = quiz;
+  for (const quiz of Object.values(Q)) for (const q of quiz.questions) if (PB.fixes?.[q.id]) Object.assign(q, PB.fixes[q.id]);
+  // Practical exercises, ordered by block (JavaScript, Express, React) and id.
+  const KIND_BLOCK = { js: 1, express: 2, react: 3 };
+  const X = (window.EXERCISES || []).slice().sort((a, b) => KIND_BLOCK[a.kind] - KIND_BLOCK[b.kind] || a.id.localeCompare(b.id));
+  const XB = Object.fromEntries(X.map((x) => [x.id, x]));
+  // Practice exams: built only from quiz questions and practical exercises (practice-bank.js).
+  const QB = Object.fromEntries(Object.values(Q).flatMap((quiz) => quiz.questions).map((q) => [q.id, q]));
+  const E = window.SIMULACROS
+    ? window.SIMULACROS.map((x) => ({ n: x.n, questions: x.questions.map((id) => QB[id]).filter(Boolean), practical: x.practical }))
+    : (window.EXAMS || []);
   // Clean URLs: the app lives at BASE (e.g. /cunef-web-programming-study/) and routes by path.
   // Links are written as "#/route" in the templates and turned into BASE + "route" when rendered.
   const BASE = new URL('..', document.currentScript.src).pathname;
@@ -804,7 +816,7 @@
     };
   }
   for (const x of E) {
-    const src = x.practical || (window.EXAM_PRACTICAL || {})[x.n];
+    const src = x.practical;
     if (!src) continue;
     x.practical = src.map((it) => (typeof it === 'string' ? (XB[it] ? toPractical(XB[it]) : null) : it.files ? toPractical(it) : it)).filter(Boolean);
   }
@@ -836,6 +848,10 @@
     const key = random ? 'aleatorio' : String(x.n);
     const ck = 'sim-' + key;
     let cur = S.current[ck];
+    // A fixed practice exam whose composition has changed since it was started starts again.
+    const fixedIds = random ? null : x.questions.map((q) => q.id).join();
+    const fixedP = random ? null : (x.practical || []).map((p) => p.id).join();
+    if (cur && !random && (cur.ids?.join() !== fixedIds || (cur.pids && cur.pids.join() !== fixedP))) cur = null;
     if (!cur || !Array.isArray(cur.ids) || !cur.ids.every((id) => QI[id])) {
       cur = S.current[ck] = { ids: random ? randomExamIds() : x.questions.map((q) => q.id), picks: {}, start: Date.now() };
       save();
@@ -1004,7 +1020,7 @@
   function exerciseCard(x) {
     const r = S.ex[x.id];
     return `<a class="card ex-card" href="#/ejercicio/${x.id}">${icon('arrow-right', 'go')}
-      <div class="card-top"><span class="q-num">Ejercicio ${esc(x.id)}</span><span class="chip plain">${esc(x.tech)}</span></div>
+      <div class="card-top"><span class="q-num">Ejercicio ${esc(x.id)} · ${esc(x.category)}</span><span class="chip plain">${esc(x.tech)}</span></div>
       <h3>${esc(x.title)}</h3>
       <p>${x.concepts.map(esc).join(' · ')}</p>
       <div class="card-foot"><span class="chip plain">${icon('clock')}${esc(x.minutes)} min</span><span class="chip plain">${esc(x.level)}</span>${r?.score != null ? `<span class="chip ${r.score >= 7 ? 'ok' : r.score >= 5 ? 'warn' : 'bad'}">${icon('award')}${fmtPts(r.score)} / 10</span>` : r?.code ? '<span class="chip warn">Empezado</span>' : ''}</div></a>`;
@@ -1016,7 +1032,7 @@
         lead: 'Ejercicios cortos como los de la parte práctica del examen: corregir un error, completar un fragmento, conectar piezas que ya existen o explicar un código. Cada uno trae dos pistas, la solución de referencia y los criterios de corrección para autoevaluarse sobre 10.',
         meta: `<span class="chip plain">${done} de ${X.length} autoevaluados</span><span class="chip plain">${icon('clock')}5-15 minutos cada uno</span>` })}
       <div class="callout info">${icon('info')}<div>Se recomienda escribir la solución sin abrir las pistas y consultar la solución solo al terminar. En el examen no hay pistas.</div></div>
-      ${EX_CATS.map((cat) => { const xs = X.filter((x) => x.category === cat); return xs.length ? `${sectionHead(esc(cat))}<div class="grid">${xs.map(exerciseCard).join('')}</div>` : ''; }).join('')}`, 'Ejercicios prácticos');
+      ${BLOCKS.map((b) => { const xs = X.filter((x) => KIND_BLOCK[x.kind] === b.id); return xs.length ? `${sectionHead(`<span style="color:var(--${b.color})">Bloque ${b.roman}</span> · ${esc(b.title)}`, `<span class="hint">${plural(xs.length, 'ejercicio', 'ejercicios')}</span>`)}<div class="grid">${xs.map(exerciseCard).join('')}</div>` : ''; }).join('')}`, 'Ejercicios prácticos');
   }
   function exercisePage(id) {
     const x = XB[id];

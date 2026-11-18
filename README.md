@@ -23,8 +23,9 @@ site/                 everything that is published
     course.js         weeks, sessions, labs, practices and links (hand-written, sources in comments)
     quizzes.js        GENERATED: quizzes 1-10 and practice exams
     guides.js         GENERATED: theory guides, converted from Markdown
-    exercises.js      practical exercises (study mode) and the practical part of practice exams 1-3
-    mock-exams.js     complete mock exams 4-6: test part and practical part
+    exercises.js      practical exercises: study mode and practical part of the practice exams
+    practice-bank.js  register fixes and extra questions for the quizzes, the DOM and Context API
+                      quizzes, and the composition of the six practice exams
 .github/workflows/    syntax check and Pages deployment
 ```
 
@@ -43,7 +44,7 @@ disk and on GitHub Pages.
 - **Practice exams**: the three fixed ones plus a random one (3 + 3 + 2 questions from blocks I, II
   and III), question navigator, indicative timer, grade out of 4; when the data includes a practical
   part, self-assessed exercises with a rubric and an indicative grade out of 10.
-- **Practical exercises**: eleven short exercises (fix, complete, connect, explain) with two progressive
+- **Practical exercises**: 21 short exercises, at least six per block, (fix, complete, connect, explain) with two progressive
   hints, the reference solution on request and a rubric for self-assessment out of 10.
 - **Error review**: every failed question is kept until it is answered correctly anywhere.
 - **Search** (`Ctrl K`, `⌘ K` or `/`) across guide sections, questions, sessions, labs and docs.
@@ -70,9 +71,11 @@ The block III guide in `guides.js` was converted without pandoc, which was not a
 equivalent converter (same header ids and `sourceCode` blocks). When the content is regenerated with
 `build-site.cjs`, block III must be added to its list of guides so it is not lost.
 
-`site/data/exercises.js` and `site/data/mock-exams.js` are hand-written here as well; the Markdown
-versions in `cunef/01-asignaturas/03-evaluacion/examenes/` (`ejercicios-practicos/` and
-`simulacros-completos/`) are exported from them.
+`site/data/exercises.js` and `site/data/practice-bank.js` are hand-written here as well. Every
+practice exam is built only from quiz questions (8, by id, 3/2/3 by block) and practical exercises
+(3, by id), as listed in `SIMULACROS`; the `EXAMS` of the generated `quizzes.js` are no longer used.
+The review pack in `cunef/01-asignaturas/03-evaluacion/examenes/revision-coordinador/` is exported
+from these files.
 
 `site/data/course.js` is hand-written in this repository (weeks, sessions, labs, links, quiz
 placeholders). Copy it back to `sitio/data/` in the corpus before regenerating, so the two stay equal.
