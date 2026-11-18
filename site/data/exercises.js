@@ -3,7 +3,8 @@
 // node-postgres with parameterized queries, JWT payload in req.user ({ sub, role }), pagination
 // responses as { page, limit, items }, React with useState/useEffect, Axios through a client created
 // with axios.create, async/await only, React Router imported from "react-router".
-// Content not taught yet (Context API, lab 10, effect cleanup, nested routes) is left out.
+// Not covered here: Context API and lab 10 (sessions 37-39, taught after these exercises were
+// written) and what the course leaves out (effect cleanup, nested routes).
 //
 // Inside these template literals, a backtick is written \` and a dollar-brace is written \${.
 'use strict';

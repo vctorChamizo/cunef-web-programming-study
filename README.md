@@ -65,6 +65,10 @@ built in the course corpus (`cunef/01-asignaturas/03-evaluacion/examenes/prepara
 The coordinator's material is used with his permission. To update the content, regenerate it there
 and copy `sitio/data/*.js` into `site/data/`.
 
+The block III guide in `guides.js` was converted without pandoc, which was not available, with an
+equivalent converter (same header ids and `sourceCode` blocks). When the content is regenerated with
+`build-site.cjs`, block III must be added to its list of guides so it is not lost.
+
 `site/data/exercises.js` and `site/data/mock-exams.js` are hand-written here as well; the Markdown
 versions in `cunef/01-asignaturas/03-evaluacion/examenes/` (`ejercicios-practicos/` and
 `simulacros-completos/`) are exported from them.

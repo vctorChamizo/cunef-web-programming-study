@@ -2,7 +2,8 @@
 // groups of both semesters, so it carries no group, no calendar dates and no exam date: the course
 // is organised by week and session, in the same order as the Canvas course.
 // Weeks and sessions: 03-calendario/planificacion-1c-iacd-a.md (numbering [V-244]); the week titles
-// and the reference links of each week follow the Canvas modules ("Semana 1" to "Semana 11").
+// and the reference links of each week follow the Canvas modules ("Semana 1" to "Semana 13";
+// structure closed in 01-asignaturas/01-clases/canvas-estructura-final.md [V-287]).
 // Labs: 01-asignaturas/05-laboratorios/estado-publicacion.md (public briefs and solutions).
 'use strict';
 const LABS_REPO = 'https://github.com/vctorChamizo/cunef-web-programming-labs/tree/main/labs/';
@@ -88,8 +89,8 @@ window.COURSE = {
       ],
     },
     {
-      id: 3, roman: 'III', title: 'Frontend con React', subtitle: 'Componentes, hooks, datos y navegación', weeks: 'Semanas 10 a 13',
-      guide: null, quizzes: [8, 9, 'context', 10],
+      id: 3, roman: 'III', title: 'Frontend con React', subtitle: 'Componentes, hooks, datos, navegación y estado compartido', weeks: 'Semanas 10 a 13',
+      guide: 'III', quizzes: [8, 9, 'context', 10],
       notes: [ // [V-261, V-262]
         'Las peticiones a la API se hacen con Axios, con un cliente creado con axios.create y la URL base en VITE_API_URL.',
         'Las promesas se trabajan con async/await.',
@@ -109,16 +110,20 @@ window.COURSE = {
             { n: '36', title: 'Laboratorio 9: hooks en la práctica', lab: 'L9' },
           ],
           links: [['Axios — Documentación oficial', 'https://axios-http.com/es/docs/intro'], ['React Router — Documentación oficial', 'https://reactrouter.com/start/library/installation']] },
-        { n: 12, title: 'Gestión de estado y estilos',
-          pending: true, note: 'Semana pendiente de actualización. Los enlaces de documentación se añadirán cuando el contenido esté publicado en Canvas.',
+        { n: 12, title: 'Estado compartido y Context API',
           sessions: [
-            { n: '37', title: 'Gestión de estado: elevar el estado y Context API' },
-            { n: '38', title: 'Estilos y extras' },
-            { n: '39', title: 'Laboratorio 10: routing y estado', lab: 'L10' },
+            { n: '37', title: 'Estado compartido: elevar el estado (lifting state) y prop drilling' },
+            { n: '38', title: 'Context API: AuthContext, login y rutas protegidas' },
+            { n: '39', title: 'Laboratorio 10: routing y estado global', lab: 'L10' },
           ],
-          links: [] },
+          links: [
+            ['React — Compartir el estado entre componentes', 'https://react.dev/learn/sharing-state-between-components'],
+            ['React — Pasar datos en profundidad con Context', 'https://react.dev/learn/passing-data-deeply-with-context'],
+            ['React — useContext', 'https://react.dev/reference/react/useContext'],
+            ['React Router — Instalación', 'https://reactrouter.com/start/library/installation'],
+          ] },
         { n: 13, title: 'Presentaciones de la Práctica 2 y repaso general',
-          pending: true, note: 'Semana pendiente de actualización. Los enlaces de documentación se añadirán cuando el contenido esté publicado en Canvas.',
+          note: 'Semana de cierre del curso: presentaciones de la Práctica 2 y repaso general. No introduce contenido nuevo, por eso no tiene documentación propia: la referencia son las guías teóricas de los tres bloques.',
           sessions: [
             { n: '40', title: 'Presentaciones de la Práctica 2' },
             { n: '41', title: 'Presentaciones de la Práctica 2' },
@@ -132,7 +137,7 @@ window.COURSE = {
   // under the same key; the fields there take precedence over these.
   quizMeta: {
     dom: { name: 'Quiz DOM', short: 'DOM', title: 'Manipulación del DOM', sessions: '10-11' },
-    context: { name: 'Quiz Context API', short: 'CTX', title: 'Gestión de estado y Context API', sessions: '37' },
+    context: { name: 'Quiz Context API', short: 'CTX', title: 'Estado compartido y Context API', sessions: '37-38' },
   },
   practices: [
     { name: 'Práctica 1', title: 'Foundations API', detail: 'API REST con operaciones CRUD y datos en memoria, con un cliente en HTML, CSS y JavaScript. Se presenta en la semana 5 y se entrega en la semana 9.' },
@@ -148,7 +153,7 @@ window.COURSE = {
     { id: 'L7', title: 'Autenticación, paginación y permisos', dir: 'lab-07-auth-pagination-permissions', solution: true },
     { id: 'L8', title: 'Primeros componentes React', dir: 'lab-08-react-components', solution: false },
     { id: 'L9', title: 'Hooks en la práctica', dir: 'lab-09-react-hooks', solution: false },
-    { id: 'L10', title: 'Routing y gestión de estado', dir: null, solution: false },
+    { id: 'L10', title: 'Routing y estado global', dir: 'lab-10-routing-state', solution: false },
   ].map((l) => ({ ...l, brief: l.dir ? LABS_REPO + l.dir : null, solutionUrl: l.dir && l.solution ? LABS_REPO + l.dir + '/solution' : null })),
   // General resources (Canvas module "Recursos").
   resources: [
