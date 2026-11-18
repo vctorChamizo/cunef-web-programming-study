@@ -297,7 +297,7 @@
     render(`
       <section class="hero">
         <div class="hero-main">
-          <p class="eyebrow">${esc(C.code)} · Sitio de estudio</p>
+          <p class="eyebrow">${esc(C.code)}</p>
           <h1>${esc(C.title)}</h1>
           <p class="lead">Material de estudio de la asignatura: guías teóricas, un quiz por laboratorio con corrección inmediata, simulacros de la parte tipo test del examen y repaso de las preguntas falladas.</p>
           <div class="actions">
