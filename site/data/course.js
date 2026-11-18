@@ -2,8 +2,7 @@
 // groups of both semesters, so it carries no group, no calendar dates and no exam date: the course
 // is organised by week and session, in the same order as the Canvas course.
 // Weeks and sessions: 03-calendario/planificacion-1c-iacd-a.md (numbering [V-244]); the week titles
-// and the reference links of each week follow the Canvas modules ("Semana 1" to "Semana 14");
-// the sessions of the last teaching week are split between Semana 13 (Practice 2) and Semana 14 (review).
+// and the reference links of each week follow the Canvas modules ("Semana 1" to "Semana 11").
 // Labs: 01-asignaturas/05-laboratorios/estado-publicacion.md (public briefs and solutions).
 'use strict';
 const LABS_REPO = 'https://github.com/vctorChamizo/cunef-web-programming-labs/tree/main/labs/';
@@ -55,8 +54,8 @@ window.COURSE = {
             { n: '13', title: 'Node.js, npm y estructura de un proyecto' },
             { n: '14', title: 'Express: rutas y middleware' },
             { n: '15', title: 'Laboratorio 4: primeras rutas con Express', lab: 'L4' },
-            { n: '19', title: 'Presentación de la Práctica 1: enunciado y rúbrica' },
           ],
+          milestone: 'Se presenta la Práctica 1: Foundations API.',
           links: [['Express.js — Documentación oficial', 'https://expressjs.com/es/'], ['Node.js — Documentación oficial', 'https://nodejs.org/docs/latest/api/']] },
         { n: 6, title: 'Controladores, errores y API REST',
           sessions: [
@@ -70,8 +69,6 @@ window.COURSE = {
             { n: '20', title: 'Modelo relacional y PostgreSQL' },
             { n: '21', title: 'Consultas SQL y migraciones' },
             { n: '22', title: 'Laboratorio 6: SQL y capa de modelos', lab: 'L6' },
-            { n: '23', title: 'Tutoría: control de la Práctica 1' },
-            { n: '24', title: 'Repaso y explicación del feedback' },
           ],
           links: [['PostgreSQL — Documentación oficial', 'https://www.postgresql.org/docs/current/'], ['node-postgres (pg) — Documentación oficial', 'https://node-postgres.com/'], ['dbdiagram — Documentación oficial de DBML', 'https://dbdiagram.io/docs'], ['Docker — Imagen oficial de PostgreSQL', 'https://hub.docker.com/_/postgres']] },
         { n: 8, title: 'Autenticación y seguridad',
@@ -84,7 +81,6 @@ window.COURSE = {
         { n: 9, title: 'Entrega de la Práctica 1 y repaso del bloque II',
           note: 'Semana dedicada a la entrega y al repaso de la Práctica 1. No introduce contenido nuevo, por eso no tiene documentación propia: la referencia es la documentación de las semanas 5 a 8.',
           sessions: [
-            { n: '28', title: 'Tutoría: control de la Práctica 1' },
             { n: '29', title: 'Entrega de la Práctica 1 y presentación de la Práctica 2' },
             { n: '30', title: 'Repaso de la Práctica 1 y otros estilos de API' },
           ],
@@ -92,7 +88,7 @@ window.COURSE = {
       ],
     },
     {
-      id: 3, roman: 'III', title: 'Frontend con React', subtitle: 'Componentes, hooks, datos y navegación', weeks: 'Semanas 10 a 14',
+      id: 3, roman: 'III', title: 'Frontend con React', subtitle: 'Componentes, hooks, datos y navegación', weeks: 'Semanas 10 a 13',
       guide: null, quizzes: [8, 9, 10],
       notes: [ // [V-261, V-262]
         'Las peticiones a la API se hacen con Axios, con un cliente creado con axios.create y la URL base en VITE_API_URL.',
@@ -121,16 +117,11 @@ window.COURSE = {
             { n: '39', title: 'Laboratorio 10: routing y estado', lab: 'L10' },
           ],
           links: [] },
-        { n: 13, title: 'Presentaciones de la Práctica 2',
+        { n: 13, title: 'Presentaciones de la Práctica 2 y repaso general',
           pending: true, note: 'Semana pendiente de actualización. Los enlaces de documentación se añadirán cuando el contenido esté publicado en Canvas.',
           sessions: [
             { n: '40', title: 'Presentaciones de la Práctica 2' },
             { n: '41', title: 'Presentaciones de la Práctica 2' },
-          ],
-          links: [] },
-        { n: 14, title: 'Repaso general y preparación del examen',
-          pending: true, note: 'Semana pendiente de actualización. Los enlaces de documentación se añadirán cuando el contenido esté publicado en Canvas.',
-          sessions: [
             { n: '42', title: 'Repaso general y preparación del examen' },
           ],
           links: [] },
