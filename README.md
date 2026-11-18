@@ -41,9 +41,9 @@ disk and on GitHub Pages.
   language labels on code, links to each section, search, print-friendly layout.
 - **Quizzes**: one question at a time with immediate feedback, keyboard shortcuts (A-D, Enter),
   resume after leaving, results with a full review and "retry only the failed ones".
-- **Practice exams**: the three fixed ones plus a random one (3 + 3 + 2 questions from blocks I, II
-  and III), question navigator, indicative timer, grade out of 4; when the data includes a practical
-  part, self-assessed exercises with a rubric and an indicative grade out of 10.
+- **Practice exams**: six fixed ones and a random one, each with 8 quiz questions (4 points) and
+  3 practical exercises (6 points), question navigator, indicative timer, automatic grading of the
+  test and rubric-based self-assessment of the practical part, for an indicative grade out of 10.
 - **Practical exercises**: 21 short exercises, at least six per block, (fix, complete, connect, explain) with two progressive
   hints, the reference solution on request and a rubric for self-assessment out of 10.
 - **Error review**: every failed question is kept until it is answered correctly anywhere.
