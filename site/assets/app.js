@@ -141,11 +141,10 @@
         ${navLink('#/recursos', 'Laboratorios y recursos', 'recursos', active, '', icon('link'))}
         ${navLink('#/progreso', 'Progreso', 'progreso', active, '', icon('chart'))}
       </div>`;
-    const days = Math.round((new Date(EXAM_DATE).setHours(0, 0, 0, 0) - TODAY) / dayMs);
     $('#side-foot').innerHTML = `<a class="side-exam" href="#/examen">
         <div class="k">Examen final</div>
-        <div class="v">${days > 1 ? `${days} días` : days === 1 ? 'Mañana' : days === 0 ? 'Hoy' : 'Realizado'}</div>
-        <div class="d">${esc(C.exam.label.replace(/^\w+ /, ''))}</div></a>`;
+        <div class="v">${esc(C.exam.label.split(',')[0])}</div>
+        <div class="d">${esc((C.exam.label.split(',')[1] || '').trim())} h · ${esc(C.exam.room)}</div></a>`;
   }
 
   const toastEl = $('#toast');
@@ -268,11 +267,11 @@
     }).join('')}</div>`;
   }
 
+  // "el bloque I", "los bloques I y II", "los bloques I, II y III": follows whatever guides data/guides.js contains.
+  const listRomans = (bs) => { const r = bs.map((b) => b.roman); return r.length < 2 ? `el bloque ${r[0] || ''}` : `los bloques ${r.slice(0, -1).join(', ')} y ${r[r.length - 1]}`; };
+
   // ---------- Home ----------
   function home() {
-    const examDay = new Date(EXAM_DATE); examDay.setHours(0, 0, 0, 0);
-    const days = Math.round((examDay - TODAY) / dayMs);
-    const done = SESSIONS.filter((s) => s.day < TODAY).length;
     const upcoming = SESSIONS.filter((s) => s.day >= TODAY);
     const nextDay = upcoming[0]?.day;
     const nextSessions = nextDay ? upcoming.filter((s) => +s.day === +nextDay) : [];
@@ -306,14 +305,6 @@
             <a class="btn secondary" href="#/simulacro/aleatorio">${icon('shuffle')}Simulacro aleatorio</a>
           </div>
         </div>
-        <a class="countdown-card" href="#/examen">
-          <span class="k">Examen final</span>
-          <span class="big">${days > 0 ? days : days === 0 ? 'Hoy' : '—'}${days > 0 ? `<small>${days === 1 ? 'día' : 'días'}</small>` : ''}</span>
-          <span class="d">${icon('calendar')}${esc(C.exam.label)}</span>
-          <span class="d">${icon('pin')}${esc(C.exam.room)}</span>
-          ${bar(pct(done, SESSIONS.length))}
-          <span class="cap">${done} de ${SESSIONS.length} sesiones impartidas</span>
-        </a>
       </section>
 
       <div class="grid-2" style="margin-top:24px">${cont}${today}</div>
@@ -337,7 +328,7 @@
 
       ${sectionHead('Preparar el examen')}
       <div class="grid-4">
-        <a class="card" href="#/guia/I">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('book')}</span></div><h3>Guías teóricas</h3><p>Explicaciones completas de los bloques I y II, con ejemplos de clase y errores habituales.</p></a>
+        <a class="card" href="#/guia/I">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('book')}</span></div><h3>Guías teóricas</h3><p>Explicaciones completas de ${listRomans(BLOCKS.filter((b) => b.guide && G[b.guide]))}, con ejemplos de clase y errores habituales.</p></a>
         <a class="card" href="#/quizzes">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('check-square')}</span></div><h3>Quizzes</h3><p>${quizKeys.length} quizzes, uno por laboratorio, con la explicación de cada respuesta.</p></a>
         <a class="card" href="#/simulacros">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('clipboard')}</span></div><h3>Simulacros</h3><p>La parte tipo test del examen: 8 preguntas de 0,5 puntos, sin penalización.</p></a>
         <a class="card" href="#/repaso">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('rotate')}</span>${wrong ? `<span class="badge">${wrong}</span>` : ''}</div><h3>Repaso de errores</h3><p>Las preguntas falladas se guardan aquí hasta que se responden bien.</p></a>
@@ -896,11 +887,8 @@
   // ---------- Exam info ----------
   function examPage() {
     const e = C.exam;
-    const examDay = new Date(EXAM_DATE); examDay.setHours(0, 0, 0, 0);
-    const days = Math.round((examDay - TODAY) / dayMs);
     render(`
-      ${pageHead({ path: [['Examen final', '']], eyebrow: 'Evaluación', title: 'Examen final', lead: `${esc(e.label)} · ${esc(e.room)}`,
-        meta: days > 0 ? `<span class="chip accent">${icon('clock')}Faltan ${plural(days, 'día', 'días')}</span>` : '' })}
+      ${pageHead({ path: [['Examen final', '']], eyebrow: 'Evaluación', title: 'Examen final', lead: `${esc(e.label)} · ${esc(e.room)}`})}
       <div class="grid-4">
         <div class="card stat"><span class="k">Fecha</span><span class="v" style="font-size:1.15rem">${esc(e.label.split(',')[0])}</span><span class="d">${esc((e.label.split(',')[1] || '').trim())} h</span></div>
         <div class="card stat"><span class="k">Aula</span><span class="v" style="font-size:1.15rem">${esc(e.room)}</span></div>

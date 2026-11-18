@@ -196,7 +196,7 @@ mark { background: color-mix(in srgb, var(--warn) 28%, transparent); color: inhe
 .side-exam { display: block; text-decoration: none; color: inherit; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
 .side-exam:hover { border-color: var(--accent-line); color: inherit; }
 .side-exam .k { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); }
-.side-exam .v { font-size: 1.35rem; font-weight: 700; color: var(--text); line-height: 1.2; margin-top: 2px; }
+.side-exam .v { font-size: 1.05rem; font-weight: 700; color: var(--text); line-height: 1.2; margin-top: 2px; }
 .side-exam .d { font-size: 0.78rem; color: var(--text-3); }
 .backdrop { position: fixed; inset: 0; background: rgba(10, 15, 25, .45); z-index: 24; }
 .content { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: calc(100vh - var(--topbar-h)); }
@@ -311,25 +311,14 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 
 /* ---------- Home ---------- */
 .hero {
-  display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: stretch;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: stretch;
   margin-bottom: 8px;
 }
 .hero-main { padding: 6px 0; }
 .hero h1 { font-size: clamp(1.8rem, 3vw, 2.4rem); letter-spacing: -0.025em; }
-.countdown-card {
   background: var(--brand); color: #fff; border-radius: var(--radius-lg); padding: 22px; display: flex; flex-direction: column; gap: 6px;
   box-shadow: var(--shadow); position: relative; overflow: hidden; text-decoration: none;
 }
-.countdown-card:hover { color: #fff; }
-.countdown-card::after { content: ""; position: absolute; right: -40px; top: -40px; width: 160px; height: 160px; border-radius: 50%; background: rgba(255, 255, 255, .06); }
-.countdown-card .k { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; opacity: .75; }
-.countdown-card .big { font-size: 3rem; font-weight: 750; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
-.countdown-card .big small { font-size: 1rem; font-weight: 600; opacity: .8; margin-left: 6px; letter-spacing: 0; }
-.countdown-card .d { font-size: 0.88rem; opacity: .9; display: flex; align-items: center; gap: 6px; }
-.countdown-card .d .i { width: 15px; height: 15px; opacity: .8; }
-.countdown-card .bar { background: rgba(255, 255, 255, .16); margin-top: 10px; }
-.countdown-card .bar > span { background: #fff; }
-.countdown-card .cap { font-size: 0.76rem; opacity: .75; }
 .card.continue-card { display: flex; flex-direction: row; align-items: center; gap: 16px; }
 .continue-card .txt { flex: 1; min-width: 0; }
 .continue-card .t { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -647,8 +636,7 @@ code span.al, code span.er { color: var(--bad); font-weight: 600; }
   .search-help { display: none; }
   .prose { font-size: 1rem; line-height: 1.7; }
   .prose h2 { font-size: 1.3rem; }
-  .countdown-card .big { font-size: 2.6rem; }
-  .section-head { margin-top: 32px; }
+    .section-head { margin-top: 32px; }
   thead th, th, td { padding: 10px 12px; }
 }
 
