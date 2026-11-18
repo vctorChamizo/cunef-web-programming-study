@@ -6,6 +6,10 @@
   const X = window.EXERCISES || [], XB = Object.fromEntries(X.map((x) => [x.id, x]));
   // Practice exams: the generated ones (quizzes.js) plus the complete mock exams (mock-exams.js).
   const E = [...(window.EXAMS || []), ...(window.MOCK_EXAMS || [])];
+  // Clean URLs: the app lives at BASE (e.g. /cunef-web-programming-study/) and routes by path.
+  // Links are written as "#/route" in the templates and turned into BASE + "route" when rendered.
+  const BASE = new URL('..', document.currentScript.src).pathname;
+  const toPath = (href) => (href.startsWith('#/') ? BASE + href.slice(2) : href);
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const main = $('#main');
@@ -462,7 +466,7 @@
       a.type = 'button'; a.className = 'anchor'; a.title = 'Copiar el enlace a esta sección'; a.setAttribute('aria-label', 'Copiar el enlace a esta sección');
       a.innerHTML = icon('link');
       a.addEventListener('click', async () => {
-        const url = location.href.split('#')[0] + `#/guia/${id}/${encodeURIComponent(h.id)}`;
+        const url = location.origin + BASE + `guia/${id}/${encodeURIComponent(h.id)}`;
         if (await copyText(url)) toast('Enlace copiado');
       });
       h.prepend(a);
@@ -484,7 +488,7 @@
         const act = $('.guide-toc a.active');
         if (act) { const box = $('.guide-toc'); const ar = act.getBoundingClientRect(), br = box.getBoundingClientRect(); if (ar.top < br.top + 40 || ar.bottom > br.bottom - 40) box.scrollTop += ar.top - br.top - br.height / 3; }
         setLast(`#/guia/${id}/${encodeURIComponent(active)}`, cur.textContent.trim(), `Guía del bloque ${b.roman}`);
-        history.replaceState(null, '', `#/guia/${id}/${encodeURIComponent(active)}`);
+        history.replaceState(null, '', `${BASE}guia/${id}/${encodeURIComponent(active)}`);
       }
     };
     on(window, 'scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
@@ -774,7 +778,7 @@
   function reviewRun(blockId) {
     const b = blockId ? blockById(blockId) : null;
     const ids = shuffle(wrongIds().filter((x) => !b || QI[x].block === b.id));
-    if (!ids.length) { location.hash = '#/repaso'; return; }
+    if (!ids.length) { navigate('#/repaso', true); return; }
     const head = () => pageHead({ path: [['Repaso de errores', '#/repaso'], [b ? `Bloque ${b.roman}` : 'Todas', '']], eyebrow: 'Repaso de errores', title: b ? `Repaso del bloque ${b.roman}` : 'Repaso de todas las preguntas falladas' });
     runner({ id: 'review', ids, persist: false, record: null, head, title: 'Repaso de errores', back: ['#/repaso', 'Volver al repaso'], next: null, showSource: true });
   }
@@ -1109,10 +1113,32 @@
   }
 
   // ---------- Progress ----------
+  // Quizzes, practice exams and exercises started and not finished.
+  function inProgress() {
+    const items = [];
+    for (const n of QUIZ_ORDER) {
+      const c = S.current['quiz-' + n];
+      if (c && Array.isArray(c.order) && (c.i > 0 || Object.keys(c.ans || {}).length)) items.push({ href: `#/quiz/${n}`, ic: 'check-square', title: `${quizName(n)} · ${Q[n].title}`, sub: `Pregunta ${Math.min(c.i + 1, c.order.length)} de ${c.order.length}`, p: pct(Math.min(c.i, c.order.length), c.order.length) });
+    }
+    for (const k of [...E.map((x) => String(x.n)), 'aleatorio']) {
+      const c = S.current['sim-' + k];
+      if (!c) continue;
+      const answered = Object.keys(c.picks || {}).length, written = Object.keys(c.code || {}).length;
+      if (answered || written) items.push({ href: `#/simulacro/${k}`, ic: 'clipboard', title: k === 'aleatorio' ? 'Simulacro aleatorio' : `Simulacro ${k}`, sub: `${answered} de ${(c.ids || []).length} preguntas respondidas${written ? ` · ${plural(written, 'ejercicio empezado', 'ejercicios empezados')}` : ''}`, p: pct(answered, (c.ids || []).length || 8) });
+    }
+    for (const x of X) {
+      const r = S.ex[x.id];
+      if (r && r.score == null && (r.code != null || r.hints || r.open)) items.push({ href: `#/ejercicio/${x.id}`, ic: 'code', title: `Ejercicio ${x.id} · ${x.title}`, sub: r.open ? 'Solución abierta, sin autoevaluar' : `${r.hints ? plural(r.hints, 'pista vista', 'pistas vistas') : 'Solución empezada'}`, p: null });
+    }
+    return items;
+  }
+
   function progressPage() {
+    const pending = inProgress();
     const rows = QUIZ_ORDER.map((n) => {
+      const c = S.current['quiz-' + n], going = c && Array.isArray(c.order) && c.i > 0;
       const r = S.quiz[n], total = r?.total || objective(Q[n].questions), p = r ? pct(r.best, total) : 0;
-      return `<tr><td><a href="#/quiz/${n}"><strong>${esc(quizName(n))}</strong></a> · ${esc(Q[n].title)}</td><td class="num">${r?.attempts || 0}</td><td class="num">${r ? `${r.last}/${total}` : '—'}</td><td class="num">${r ? `${r.best}/${total}` : '—'}</td><td style="min-width:120px">${r ? bar(p, p >= 70 ? 'ok' : '') : '<span class="muted">Sin empezar</span>'}</td><td class="num">${r?.at ? fmtShort(r.at) : '—'}</td></tr>`;
+      return `<tr><td><a href="#/quiz/${n}"><strong>${esc(quizName(n))}</strong></a> · ${esc(Q[n].title)}</td><td class="num">${r?.attempts || 0}</td><td class="num">${r ? `${r.last}/${total}` : '—'}</td><td class="num">${r ? `${r.best}/${total}` : '—'}</td><td style="min-width:120px">${r ? bar(p, p >= 70 ? 'ok' : '') : (going ? `<span class="chip warn">${icon('clock')}A medias · ${c.i}/${c.order.length}</span>` : '<span class="muted">Sin empezar</span>')}</td><td class="num">${r?.at ? fmtShort(r.at) : '—'}</td></tr>`;
     }).join('');
     const exKeys = [...E.map((x) => String(x.n)), 'aleatorio'];
     const exRows = exKeys.map((k) => {
@@ -1121,6 +1147,8 @@
     }).join('');
     render(`
       ${pageHead({ path: [['Progreso', '']], eyebrow: 'Seguimiento', title: 'Progreso', lead: 'Resultados guardados en este navegador. No se envían a ningún sitio ni cuentan para la evaluación: si se cambia de navegador o de dispositivo, se empieza de cero.' })}
+      ${pending.length ? `${sectionHead('En curso')}
+      <div class="list-card">${pending.map((it) => `<a class="lab-row progress-row" href="${it.href}"><span class="lab-id">${icon(it.ic)}</span><div class="lab-main"><div class="t">${esc(it.title)}</div><div class="s">${esc(it.sub)}</div>${it.p != null ? `<div style="margin-top:6px;max-width:320px">${bar(it.p)}</div>` : ''}</div><span class="btn sm secondary">${icon('play')}Continuar</span></a>`).join('')}</div>` : ''}
       ${sectionHead('Quizzes')}
       <div class="table-wrap"><table><thead><tr><th>Quiz</th><th class="num">Intentos</th><th class="num">Último</th><th class="num">Mejor</th><th>Nivel</th><th class="num">Fecha</th></tr></thead><tbody>${rows}</tbody></table></div>
       ${sectionHead('Simulacros')}
@@ -1295,11 +1323,37 @@
 
   // ---------- Router ----------
   let currentKey = 'home', currentGuide = null;
-  function navigate(href) {
-    if (location.hash === href) route(); else location.hash = href;
+  function navigate(href, replace = false) {
+    const path = toPath(href);
+    if (path !== location.pathname + location.search) history[replace ? 'replaceState' : 'pushState'](null, '', path);
+    route();
   }
+  // Rewrites "#/route" links to clean paths whenever content is rendered.
+  function fixLinks(rootEl) {
+    if (rootEl.nodeType !== 1) return;
+    const list = rootEl.matches?.('a[href^="#/"]') ? [rootEl] : [];
+    list.concat($$('a[href^="#/"]', rootEl)).forEach((a) => a.setAttribute('href', toPath(a.getAttribute('href'))));
+  }
+  fixLinks(document.body);
+  new MutationObserver((muts) => muts.forEach((m) => m.addedNodes.forEach(fixLinks))).observe(document.body, { childList: true, subtree: true });
+  // Internal links navigate without reloading; "#id" links scroll within the page.
+  document.addEventListener('click', (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const a = e.target.closest('a[href]');
+    if (!a || a.target || a.hasAttribute('download')) return;
+    const href = a.getAttribute('href');
+    if (href.startsWith('#') && !href.startsWith('#/')) {
+      const el = document.getElementById(decodeURIComponent(href.slice(1)));
+      if (el) { e.preventDefault(); el.scrollIntoView({ block: 'start' }); if (el.tabIndex < 0 && !/^(A|BUTTON|INPUT|TEXTAREA)$/.test(el.tagName)) el.setAttribute('tabindex', '-1'); el.focus({ preventScroll: true }); }
+      return;
+    }
+    const url = new URL(a.href, location.href);
+    if (url.origin !== location.origin || !url.pathname.startsWith(BASE) || /\.[a-z0-9]+$/i.test(url.pathname)) return;
+    e.preventDefault();
+    navigate(url.pathname + url.search);
+  });
   function route() {
-    const raw = location.hash.replace(/^#\/?/, '');
+    const raw = location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : '';
     const parts = raw.split('/').filter(Boolean);
     const [page, arg, a3] = parts;
     // Same guide, new section: scroll without re-rendering.
@@ -1322,7 +1376,7 @@
     };
     currentKey = keyFor();
     renderNav(currentKey);
-    if (page === 'examen') history.replaceState(null, '', '#/');
+    if (page === 'examen') history.replaceState(null, '', BASE);
     if (!page || page === 'examen') return home();
     switch (page) {
       case 'bloque': return blockPage(arg);
@@ -1340,12 +1394,19 @@
       default: return notFound();
     }
   }
-  window.addEventListener('hashchange', route);
+  window.addEventListener('popstate', route);
+  // Old links with a hash (#/quiz/1) and deep links redirected by 404.html (?p=quiz/1) become clean paths.
+  window.addEventListener('hashchange', () => { if (location.hash.startsWith('#/')) navigate(location.hash, true); });
+  {
+    const params = new URLSearchParams(location.search);
+    if (location.hash.startsWith('#/')) history.replaceState(null, '', toPath(location.hash));
+    else if (params.has('p')) history.replaceState(null, '', BASE + params.get('p').replace(/^\//, '') + location.hash);
+  }
   window.addEventListener('pagehide', () => save(true));
   route();
 
   // Offline support: network first, cache as fallback (see sw.js).
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { /* offline support is optional */ }));
+    window.addEventListener('load', () => navigator.serviceWorker.register(BASE + 'sw.js').catch(() => { /* offline support is optional */ }));
   }
 })();

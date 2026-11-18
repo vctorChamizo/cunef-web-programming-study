@@ -1,7 +1,7 @@
 'use strict';
 // Offline support for the study site. Network first, so students always get the latest version
 // when online; the cached copy is only used when the network fails.
-const CACHE = 'g247-study-v4';
+const CACHE = 'g247-study-v5';
 const SHELL = ['./', 'index.html', 'assets/styles.css', 'assets/app.js', 'assets/icon.svg', 'data/course.js', 'data/quizzes.js', 'data/guides.js', 'data/exercises.js', 'data/mock-exams.js'];
 
 self.addEventListener('install', (event) => {

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>G247</title>
+  <meta name="robots" content="noindex">
+  <script>
+    // GitHub Pages serves this page for any path that is not a file (e.g. /<repo>/quiz/1).
+    // It sends the browser to the app with the path in ?p=, and the app restores the clean URL.
+    (function () {
+      var l = window.location;
+      var base = /\.github\.io$/.test(l.hostname) ? '/' + l.pathname.split('/')[1] + '/' : '/';
+      var path = l.pathname.indexOf(base) === 0 ? l.pathname.slice(base.length) : l.pathname.replace(/^\//, '');
+      l.replace(base + '?p=' + encodeURIComponent(path + l.search) + l.hash);
+    })();
+  </script>
+</head>
+<body></body>
+</html>

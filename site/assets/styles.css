@@ -403,6 +403,9 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .week-note .i { width: 15px; height: 15px; color: var(--bc, var(--accent)); flex: none; }
 .lab-row { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
 .lab-row:last-child { border-bottom: 0; }
+a.progress-row { color: inherit; text-decoration: none; }
+a.progress-row:hover { background: var(--surface-2); color: inherit; }
+.progress-row .lab-id .i { width: 18px; height: 18px; }
 .lab-id { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 10px; background: var(--surface-2); font-weight: 700; font-size: 0.85rem; color: var(--text-2); flex: none; font-variant-numeric: tabular-nums; }
 .lab-main { flex: 1; min-width: 0; }
 .lab-main .t { font-weight: 600; }

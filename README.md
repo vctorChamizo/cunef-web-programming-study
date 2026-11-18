@@ -16,6 +16,7 @@ The site is in Spanish. Code, comments and repository documentation are in Engli
 site/                 everything that is published
   index.html          app shell (top bar, sidebar, search dialog, icon sprite)
   sw.js               offline support: network first, cached copy as fallback
+  404.html            sends deep links (/quiz/1) back to the app, which restores the clean URL
   assets/             app.js (router, pages, quiz and practice-exam engines, search, progress),
                       styles.css (light and dark themes) and icon.svg
   data/
