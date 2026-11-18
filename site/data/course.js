@@ -12,7 +12,7 @@ window.COURSE = {
   blocks: [
     {
       id: 1, roman: 'I', title: 'Fundamentos del navegador', subtitle: 'HTML, CSS, JavaScript y el DOM', weeks: 'Semanas 1 a 4',
-      guide: 'I', quizzes: [1, 2, 3],
+      guide: 'I', quizzes: [1, 2, 3, 'dom'],
       weekList: [
         { n: 1, title: 'HTML: estructura de una página',
           sessions: [
@@ -89,7 +89,7 @@ window.COURSE = {
     },
     {
       id: 3, roman: 'III', title: 'Frontend con React', subtitle: 'Componentes, hooks, datos y navegación', weeks: 'Semanas 10 a 13',
-      guide: null, quizzes: [8, 9, 10],
+      guide: null, quizzes: [8, 9, 'context', 10],
       notes: [ // [V-261, V-262]
         'Las peticiones a la API se hacen con Axios, con un cliente creado con axios.create y la URL base en VITE_API_URL.',
         'Las promesas se trabajan con async/await.',
@@ -128,6 +128,12 @@ window.COURSE = {
       ],
     },
   ],
+  // Quizzes without a lab. They appear as "Próximamente" until data/quizzes.js includes them
+  // under the same key; the fields there take precedence over these.
+  quizMeta: {
+    dom: { name: 'Quiz DOM', short: 'DOM', title: 'Manipulación del DOM', sessions: '10-11' },
+    context: { name: 'Quiz Context API', short: 'CTX', title: 'Gestión de estado y Context API', sessions: '37' },
+  },
   practices: [
     { name: 'Práctica 1', title: 'Foundations API', detail: 'API REST con operaciones CRUD y datos en memoria, con un cliente en HTML, CSS y JavaScript. Se presenta en la semana 5 y se entrega en la semana 9.' },
     { name: 'Práctica 2', title: 'Full-Stack Application', detail: 'Evolución del mismo proyecto: base de datos PostgreSQL, autenticación con JWT y frontend en React con React Router. Se presenta en la semana 9 y se expone en la semana 13.' },

@@ -28,6 +28,7 @@
   const fold = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const fmtNum = (n, d = 1) => n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
   const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+  const fmtPts = (n) => n.toLocaleString('es-ES', { maximumFractionDigits: 2 });
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
   const fmtShort = (ts) => new Date(ts).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
   const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
@@ -38,7 +39,13 @@
 
   // ---------- Course model ----------
   const BLOCKS = C.blocks.map((b) => ({ ...b, color: `b${b.id}`, sessions: b.weekList.flatMap((w) => w.sessions.map((s) => ({ ...s, week: w.n }))) }));
-  const blockOfQuiz = (n) => BLOCKS.find((b) => b.quizzes.includes(Number(n)));
+  // Quizzes are keyed by lab number (1-10) or, for topics without a lab, by a word ("dom", "context").
+  const blockOfQuiz = (n) => BLOCKS.find((b) => b.quizzes.some((k) => String(k) === String(n)));
+  const QUIZ_META = C.quizMeta || {};
+  const quizInfo = (n) => ({ ...(QUIZ_META[n] || {}), ...(Q[n] || {}) });
+  const quizName = (n) => quizInfo(n).name || `Quiz ${n}`;
+  const quizShort = (n) => (/^\d+$/.test(String(n)) ? 'Q' + n : (quizInfo(n).short || String(n).slice(0, 3).toUpperCase()));
+  const QUIZ_ORDER = [...BLOCKS.flatMap((b) => b.quizzes.map(String)), ...Object.keys(Q)].filter((k, i, a) => Q[k] && a.indexOf(k) === i);
   const blockById = (id) => BLOCKS.find((b) => String(b.id) === String(id));
   const SESSIONS = BLOCKS.flatMap((b) => b.sessions.map((s) => ({ ...s, block: b })));
   const labSession = (id) => SESSIONS.find((s) => s.lab === id);
@@ -46,7 +53,7 @@
   // Question index: every question by id, with its source and block.
   const PREFIX_BLOCK = { c1: 1, c2: 1, c3: 1, html: 1, css: 1, js: 1, dom: 1, node: 2, express: 2, rest: 2, sql: 2, auth: 2, components: 3, state: 3, routing: 3 };
   const QI = {};
-  for (const n of Object.keys(Q)) for (const q of Q[n].questions) QI[q.id] = { q, quiz: Number(n), block: blockOfQuiz(n)?.id, rubric: Q[n].rubric };
+  for (const n of Object.keys(Q)) for (const q of Q[n].questions) QI[q.id] = { q, quiz: String(n), block: blockOfQuiz(n)?.id, rubric: Q[n].rubric };
   for (const x of E) for (const q of x.questions) if (!QI[q.id]) QI[q.id] = { q, exam: x.n, block: PREFIX_BLOCK[q.id.split('-')[0]] || null };
   const allObjective = Object.values(QI).filter((e) => isObjective(e.q) && e.q.choices);
 
@@ -192,7 +199,7 @@
   function quizCard(n) {
     const q = Q[n];
     const b = blockOfQuiz(n);
-    if (!q) return `<div class="card muted-card quiz-card"><span class="q-num">Quiz ${n}</span><h3>Disponible próximamente</h3><p>Quiz del laboratorio L${n}.</p></div>`;
+    if (!q) { const m = quizInfo(n); return `<div class="card muted-card quiz-card"><div class="card-top"><span class="q-num">${esc(quizName(n))}${m.sessions ? ` · ${/[-,]/.test(m.sessions) ? 'sesiones' : 'sesión'} ${esc(m.sessions)}` : ''}</span><span class="chip">Próximamente</span></div><h3>${esc(m.title || 'Disponible próximamente')}</h3><p>${/^\d+$/.test(String(n)) ? `Quiz del laboratorio L${n}.` : 'Quiz de repaso del tema, sin laboratorio asociado.'}</p></div>`; }
     const total = objective(q.questions), essays = q.questions.length - total;
     const rec = S.quiz[n], cur = S.current['quiz-' + n];
     let foot;
@@ -203,9 +210,9 @@
     } else foot = '<span class="chip plain">Sin empezar</span>';
     return `<a class="card quiz-card" href="#/quiz/${n}">
       ${icon('arrow-right', 'go')}
-      <div class="card-top"><span class="q-num">Quiz ${n} · ${esc(q.lab)}</span><span class="chip ${b.color}">Bloque ${b.roman}</span></div>
+      <div class="card-top"><span class="q-num">${esc(quizName(n))} · ${q.lab ? esc(q.lab) : 'Sin laboratorio'}</span><span class="chip ${b.color}">Bloque ${b.roman}</span></div>
       <h3>${esc(q.title)}</h3>
-      <p>${plural(q.questions.length, 'pregunta', 'preguntas')}${essays ? ` · ${essays} de programar` : ''} · sesiones ${esc(q.sessions)}</p>
+      <p>${plural(q.questions.length, 'pregunta', 'preguntas')}${essays ? ` · ${essays} de programar` : ''} · ${/[-,]/.test(String(q.sessions)) ? 'sesiones' : 'sesión'} ${esc(q.sessions)}</p>
       ${rec?.best != null ? bar(pct(rec.best, rec.total || total), pct(rec.best, rec.total || total) >= 70 ? 'ok' : '') : ''}
       <div class="card-foot">${foot}</div></a>`;
   }
@@ -217,14 +224,14 @@
         : '<span class="chip plain">Sin hacer</span>';
     return `<a class="card" href="#/simulacro/${x.n}">${icon('arrow-right', 'go')}
       <div class="card-top"><span class="icon-tile">${icon('clipboard')}</span></div>
-      <h3>Simulacro ${x.n}</h3><p>${x.questions.length} preguntas de los tres bloques · 0,5 puntos cada una</p>
+      <h3>Simulacro ${x.n}</h3><p>${x.questions.length} preguntas tipo test${x.practical?.length ? ` y ${plural(x.practical.length, 'ejercicio práctico', 'ejercicios prácticos')}` : ' de los tres bloques · 0,5 puntos cada una'}</p>
       <div class="card-foot">${foot}</div></a>`;
   }
   function randomExamCard() {
     const rec = S.exam.aleatorio;
     return `<a class="card" href="#/simulacro/aleatorio">${icon('arrow-right', 'go')}
       <div class="card-top"><span class="icon-tile">${icon('shuffle')}</span></div>
-      <h3>Simulacro aleatorio</h3><p>8 preguntas nuevas en cada intento, sacadas de todo el banco: 3 del bloque I, 3 del II y 2 del III.</p>
+      <h3>Simulacro aleatorio</h3><p>8 preguntas nuevas en cada intento, sacadas de todo el banco: 3 del bloque I, 3 del II y 2 del III${HAS_PRACTICAL ? ', y un ejercicio práctico de cada tipo' : ''}.</p>
       <div class="card-foot">${rec?.attempts ? `<span class="chip plain">${plural(rec.attempts, 'intento', 'intentos')}</span>` : '<span class="chip plain">Ilimitado</span>'}</div></a>`;
   }
 
@@ -330,7 +337,7 @@
           <h3>Práctica del bloque</h3>
           <p>${qd} de ${b.quizzes.length} quizzes hechos${blockWrong ? ` · ${plural(blockWrong, 'pregunta', 'preguntas')} por repasar` : ''}.</p>
           ${bar(pct(qd, b.quizzes.length))}
-          <div class="card-foot">${blockWrong ? `<a class="btn sm" href="#/repaso/practicar/${b.id}">${icon('rotate')}Repasar errores del bloque</a>` : `<a class="btn sm secondary" href="#/quiz/${b.quizzes.find((n) => !S.quiz[n]?.attempts) || b.quizzes[0]}">${icon('play')}Hacer un quiz</a>`}</div>
+          <div class="card-foot">${blockWrong ? `<a class="btn sm" href="#/repaso/practicar/${b.id}">${icon('rotate')}Repasar errores del bloque</a>` : `<a class="btn sm secondary" href="#/quiz/${b.quizzes.find((n) => Q[n] && !S.quiz[n]?.attempts) || b.quizzes.find((n) => Q[n])}">${icon('play')}Hacer un quiz</a>`}</div>
         </div>
       </div>
       ${sectionHead('Quizzes del bloque')}
@@ -403,8 +410,8 @@
       </div>
       <section class="guide-end">
         <div class="card"><div class="card-top"><span class="icon-tile">${icon('check-square')}</span></div>
-          <h3>Comprobar lo aprendido</h3><p>Los quizzes del bloque ${b.roman} cubren lo que explica esta guía, laboratorio a laboratorio.</p>
-          <div class="card-foot">${b.quizzes.map((n) => `<a class="btn sm secondary" href="#/quiz/${n}">Quiz ${n} · ${esc(Q[n]?.title || '')}</a>`).join('')}</div></div>
+          <h3>Comprobar lo aprendido</h3><p>Los quizzes del bloque ${b.roman} cubren lo que explica esta guía.</p>
+          <div class="card-foot">${b.quizzes.filter((n) => Q[n]).map((n) => `<a class="btn sm secondary" href="#/quiz/${n}">${esc(quizName(n))} · ${esc(Q[n].title)}</a>`).join('')}</div></div>
       </section>`, `Guía del bloque ${b.roman}`, { wide: true });
 
     const art = $('#guide');
@@ -523,7 +530,7 @@
       if (q.type === 'fib') body = `<div class="fib-row"><input class="input" id="fib" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Respuesta" placeholder="Escribir la respuesta"><button class="btn" id="check" type="button">Comprobar</button></div>`;
       else if (q.type === 'essay') body = `<div class="callout info">${icon('code')}<div>Ejercicio de programación: se resuelve en la consola del navegador (<kbd>F12</kbd> → Console) o en un fichero. No suma al resultado del quiz.</div></div><button class="btn secondary" id="reveal" type="button">Ver la solución de referencia</button>`;
       else body = choicesHtml(q, 0, false);
-      const src = e.quiz && cfg.showSource ? `<span class="chip plain">Quiz ${e.quiz}</span>` : e.exam && cfg.showSource ? `<span class="chip plain">Simulacro ${e.exam}</span>` : '';
+      const src = e.quiz && cfg.showSource ? `<span class="chip plain">${esc(quizName(e.quiz))}</span>` : e.exam && cfg.showSource ? `<span class="chip plain">Simulacro ${e.exam}</span>` : '';
       render(`${cfg.head()}
         <div class="runner">
           <div class="runner-top"><span class="runner-count">${st.i + 1} / ${st.order.length}</span><div class="segments" aria-hidden="true">${segs()}</div><div class="runner-score">${scoreChips()}</div></div>
@@ -701,17 +708,16 @@
     const quiz = Q[n];
     if (!quiz) return notFound();
     const b = blockOfQuiz(n);
-    const keys = Object.keys(Q).map(Number).sort((x, y) => x - y);
-    const nextN = keys[keys.indexOf(Number(n)) + 1];
+    const nextN = QUIZ_ORDER[QUIZ_ORDER.indexOf(String(n)) + 1];
     const head = () => pageHead({
-      path: [[`Bloque ${b.roman}`, `#/bloque/${b.id}`], [`Quiz ${n}`, '']],
-      eyebrow: `Quiz ${n} · Laboratorio ${esc(quiz.lab.replace('L', ''))} · sesiones ${esc(quiz.sessions)}`, eyebrowStyle: `color:var(--${b.color})`,
+      path: [[`Bloque ${b.roman}`, `#/bloque/${b.id}`], [quizName(n), '']],
+      eyebrow: `${esc(quizName(n))} · ${quiz.lab ? `Laboratorio ${esc(quiz.lab.replace('L', ''))}` : 'Sin laboratorio'} · ${/[-,]/.test(String(quiz.sessions)) ? 'sesiones' : 'sesión'} ${esc(quiz.sessions)}`, eyebrowStyle: `color:var(--${b.color})`,
       title: esc(quiz.title),
     });
-    setLast(`#/quiz/${n}`, `Quiz ${n} · ${quiz.title}`, `Bloque ${b.roman}`);
+    setLast(`#/quiz/${n}`, `${quizName(n)} · ${quiz.title}`, `Bloque ${b.roman}`);
     runner({
-      id: 'quiz-' + n, ids: quiz.questions.map((q) => q.id), persist: true, record: ['quiz', String(n)], head, title: `Quiz ${n}`,
-      back: [`#/bloque/${b.id}`, `Volver al bloque ${b.roman}`], next: nextN ? [`#/quiz/${nextN}`, `Quiz ${nextN}`] : null,
+      id: 'quiz-' + n, ids: quiz.questions.map((q) => q.id), persist: true, record: ['quiz', String(n)], head, title: quizName(n),
+      back: [`#/bloque/${b.id}`, `Volver al bloque ${b.roman}`], next: nextN ? [`#/quiz/${nextN}`, quizName(nextN)] : null,
     });
   }
 
@@ -733,7 +739,7 @@
           <p>${bi.length ? plural(bi.length, 'pregunta pendiente', 'preguntas pendientes') : 'Nada pendiente'}</p>
           <div class="card-foot">${bi.length ? `<a class="btn sm secondary" href="#/repaso/practicar/${b.id}">Repasar el bloque ${b.roman}</a>` : '<span class="chip ok">' + icon('check') + 'Al día</span>'}</div></div>`).join('')}</div>
         ${sectionHead('Preguntas pendientes', '<button class="btn sm danger" id="clear-wrong" type="button">' + icon('trash') + 'Vaciar la lista</button>')}
-        <div class="list-card">${ids.map((x) => { const e = QI[x]; return `<div class="lab-row"><span class="lab-id" style="font-size:.72rem">${e.quiz ? 'Q' + e.quiz : 'S' + e.exam}</span><div class="lab-main"><div class="t" style="font-weight:500">${inline(plain(e.q.q).slice(0, 180))}${plain(e.q.q).length > 180 ? '…' : ''}</div><div class="s">${e.quiz ? `Quiz ${e.quiz} · ${esc(Q[e.quiz].title)}` : `Simulacro ${e.exam}`} · fallada el ${fmtShort(S.wrong[x])}</div></div></div>`; }).join('')}</div>`
+        <div class="list-card">${ids.map((x) => { const e = QI[x]; return `<div class="lab-row"><span class="lab-id" style="font-size:.72rem">${e.quiz ? esc(quizShort(e.quiz)) : 'S' + e.exam}</span><div class="lab-main"><div class="t" style="font-weight:500">${inline(plain(e.q.q).slice(0, 180))}${plain(e.q.q).length > 180 ? '…' : ''}</div><div class="s">${e.quiz ? `${esc(quizName(e.quiz))} · ${esc(Q[e.quiz].title)}` : `Simulacro ${e.exam}`} · fallada el ${fmtShort(S.wrong[x])}</div></div></div>`; }).join('')}</div>`
       : `<div class="card empty"><span class="icon-tile">${icon('check')}</span><h3>No hay preguntas pendientes</h3><p>Las preguntas falladas en quizzes y simulacros aparecerán aquí para repasarlas.</p><div class="actions" style="justify-content:center"><a class="btn" href="#/quizzes">Ir a los quizzes</a></div></div>`}`, 'Repaso de errores');
     if ($('#clear-wrong')) on($('#clear-wrong'), 'click', () => {
       if (!confirm('¿Vaciar la lista de preguntas pendientes de repaso?')) return;
@@ -752,9 +758,27 @@
   function simulacrosPage() {
     render(`
       ${pageHead({ path: [['Simulacros', '']], eyebrow: 'Practicar', title: 'Simulacros del examen',
-        lead: 'Cada simulacro reproduce la parte tipo test del examen final: 8 preguntas de los tres bloques, 0,5 puntos cada una y sin penalización por error. Se responde todo y se corrige al final.',
-        meta: `<span class="chip plain">${icon('award')}Parte tipo test: 4 de los 10 puntos del examen</span><span class="chip plain">${icon('clock')}Con cronómetro orientativo</span>` })}
+        lead: HAS_PRACTICAL
+        ? 'Cada simulacro reproduce el examen final: una parte tipo test de 8 preguntas (4 puntos, sin penalización por error), que se corrige sola, y una parte práctica de ejercicios de programación (6 puntos), que se autoevalúa con la solución de referencia y sus criterios de corrección.'
+        : 'Cada simulacro reproduce la parte tipo test del examen final: 8 preguntas de los tres bloques, 0,5 puntos cada una y sin penalización por error. Se responde todo y se corrige al final.',
+        meta: `<span class="chip plain">${icon('award')}Tipo test: 4 puntos</span>${HAS_PRACTICAL ? `<span class="chip plain">${icon('code')}Parte práctica: 6 puntos</span>` : ''}<span class="chip plain">${icon('clock')}Con cronómetro orientativo</span>` })}
       <div class="grid">${E.map(examCard).join('')}${randomExamCard()}</div>`, 'Simulacros');
+  }
+
+  // Practical exercises (EXAMS[i].practical): one of each kind in the random practice exam.
+  const PRACTICAL = E.flatMap((x) => (x.practical || []).map((p) => ({ ...p, exam: x.n })));
+  const PI = Object.fromEntries(PRACTICAL.map((p) => [p.id, p]));
+  const HAS_PRACTICAL = PRACTICAL.length > 0;
+  function randomPracticalIds() {
+    const kinds = [...new Set(PRACTICAL.map((p) => p.kind || p.id))];
+    return kinds.map((k) => shuffle(PRACTICAL.filter((p) => (p.kind || p.id) === k))[0].id);
+  }
+  const rubricItems = (p) => (p.rubric || []).map((r) => (typeof r === 'string' ? { text: r, points: null } : r));
+  // Points of a rubric item; items without points share the rest of the exercise equally.
+  function rubricPoints(p) {
+    const items = rubricItems(p);
+    const fixed = items.reduce((a, r) => a + (r.points || 0), 0), free = items.filter((r) => r.points == null).length;
+    return items.map((r) => (r.points != null ? r.points : free ? Math.max(0, (p.points || 0) - fixed) / free : 0));
   }
 
   function randomExamIds() {
@@ -773,11 +797,17 @@
       cur = S.current[ck] = { ids: random ? randomExamIds() : x.questions.map((q) => q.id), picks: {}, start: Date.now() };
       save();
     }
+    if (!Array.isArray(cur.pids) || !cur.pids.every((id) => PI[id])) cur.pids = random ? (HAS_PRACTICAL ? randomPracticalIds() : []) : (x.practical || []).map((p) => p.id);
+    cur.code = cur.code || {};
     const qs = cur.ids.map((id) => QI[id].q);
+    const ps = cur.pids.map((id) => PI[id]);
+    const pTotal = ps.reduce((a, p) => a + (p.points || 0), 0);
     const name = random ? 'Simulacro aleatorio' : `Simulacro ${x.n}`;
-    setLast(`#/simulacro/${key}`, name, 'Parte tipo test del examen');
-    const head = pageHead({ path: [['Simulacros', '#/simulacros'], [name, '']], eyebrow: 'Simulacro · parte tipo test', title: name,
-      lead: `${qs.length} preguntas de opción múltiple, 0,5 puntos cada una. Las respuestas incorrectas no descuentan. La corrección se muestra al terminar.` });
+    setLast(`#/simulacro/${key}`, name, ps.length ? 'Simulacro completo del examen' : 'Parte tipo test del examen');
+    const head = pageHead({ path: [['Simulacros', '#/simulacros'], [name, '']], eyebrow: ps.length ? 'Simulacro · examen completo' : 'Simulacro · parte tipo test', title: name,
+      lead: ps.length
+        ? `Parte tipo test: ${qs.length} preguntas de 0,5 puntos, sin penalización. Parte práctica: ${plural(ps.length, 'ejercicio', 'ejercicios')}, ${fmtPts(pTotal)} puntos. Al corregir se muestra la solución de referencia de cada ejercicio para autoevaluarlo.`
+        : `${qs.length} preguntas de opción múltiple, 0,5 puntos cada una. Las respuestas incorrectas no descuentan. La corrección se muestra al terminar.` });
     render(`${head}
       <div class="exam-layout">
         <div>
@@ -785,13 +815,22 @@
           ${qs.map((q, qi) => `<section class="qcard" id="q-${qi}" aria-labelledby="qt-${qi}">
             <div class="qhead"><span class="qnum">Pregunta ${qi + 1} de ${qs.length}</span><span class="chip">${typeLabel[q.type] || 'Pregunta'}</span></div>
             <div class="qtext" id="qt-${qi}">${md(q.q)}</div>${choicesHtml(q, qi, true)}<div class="fb" aria-live="polite"></div></section>`).join('')}
+          ${ps.length ? `<div class="part-head" id="practical"><h2>Parte práctica</h2><span class="chip accent">${fmtPts(pTotal)} puntos</span></div>
+          <p class="muted part-lead">Escribir cada solución en su recuadro, como en el examen. Al corregir se muestra la solución de referencia con sus criterios: marcar los que se cumplen para obtener la nota orientativa.</p>
+          ${ps.map((p, pi) => `<section class="qcard pcard" id="p-${pi}" data-pid="${esc(p.id)}">
+            <div class="qhead"><span class="qnum">Ejercicio ${pi + 1} de ${ps.length}</span><span class="chip accent">${fmtPts(p.points || 0)} ${p.points === 1 ? 'punto' : 'puntos'}</span></div>
+            <h3 class="ptitle">${esc(p.title)}</h3>
+            <div class="qtext">${md(p.statement)}</div>
+            <label class="sr-only" for="code-${pi}">Solución del ejercicio ${pi + 1}</label>
+            <textarea class="code-input" id="code-${pi}" spellcheck="false" autocapitalize="off" autocomplete="off" rows="${Math.max(8, String(cur.code[p.id] ?? p.starter ?? '').split('\n').length + 3)}">${esc(cur.code[p.id] ?? p.starter ?? '')}</textarea>
+            <div class="pfb"></div></section>`).join('')}` : ''}
           <div class="actions" id="exam-actions"><button class="btn" id="grade" type="button">${icon('check')}Corregir el simulacro</button><span class="hint" id="grade-hint"></span></div>
           <div class="exam-mobile-bar" id="mbar"><span class="txt" id="mbar-txt"></span><button class="btn sm" id="grade-m" type="button">Corregir</button></div>
         </div>
         <aside class="exam-side">
           <div class="card"><div class="stat"><span class="k">Tiempo</span><span class="timer" id="timer">00:00</span><span class="d">Orientativo, no limita</span></div></div>
           <div class="card"><div class="stat" style="margin-bottom:10px"><span class="k">Preguntas</span><span class="d" id="answered"></span></div>
-            <nav class="exam-nav" aria-label="Ir a la pregunta">${qs.map((_, qi) => `<a href="#q-${qi}" data-q="${qi}">${qi + 1}</a>`).join('')}</nav>
+            <nav class="exam-nav" aria-label="Ir a la pregunta">${qs.map((_, qi) => `<a href="#q-${qi}" data-q="${qi}">${qi + 1}</a>`).join('')}${ps.map((_, pi) => `<a href="#p-${pi}" data-p="${pi}" class="pnav">P${pi + 1}</a>`).join('')}</nav>
             <button class="btn sm" id="grade-s" type="button" style="width:100%;margin-top:14px">Corregir</button></div>
         </aside>
       </div>`, name);
@@ -808,7 +847,7 @@
       $('#answered').textContent = `${done} de ${qs.length} respondidas`;
       $('#mbar-txt').textContent = `${done} de ${qs.length} respondidas`;
       $('#grade-hint').textContent = missing ? `Quedan ${missing} sin responder` : 'Todo respondido';
-      $$('.exam-nav a').forEach((a) => a.classList.toggle('answered', cur.picks[a.dataset.q] != null));
+      $$('.exam-nav a[data-q]').forEach((a) => a.classList.toggle('answered', cur.picks[a.dataset.q] != null));
       confirmArmed = false;
       $('#grade').innerHTML = `${icon('check')}Corregir el simulacro`;
     };
@@ -822,7 +861,20 @@
       $$(`.choice[data-q="${qi}"]`).forEach((b2) => { const sel = Number(b2.dataset.i) === k; b2.classList.toggle('selected', sel); b2.setAttribute('aria-pressed', String(sel)); });
       update();
     }));
-    $$('.exam-nav a').forEach((a) => on(a, 'click', (ev) => { ev.preventDefault(); $('#q-' + a.dataset.q).scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
+    $$('.exam-nav a').forEach((a) => on(a, 'click', (ev) => { ev.preventDefault(); $(a.dataset.p != null ? '#p-' + a.dataset.p : '#q-' + a.dataset.q).scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
+    const markWritten = () => ps.forEach((p, pi) => $(`.exam-nav a[data-p="${pi}"]`)?.classList.toggle('answered', !!cur.code[p.id] && cur.code[p.id] !== (p.starter || '')));
+    $$('.code-input').forEach((ta, pi) => {
+      on(ta, 'input', () => { cur.code[ps[pi].id] = ta.value; save(); markWritten(); });
+      on(ta, 'keydown', (ev) => { // Tab indents instead of leaving the box; Esc then Tab leaves it.
+        if (ev.key !== 'Tab' || ev.shiftKey || ta.dataset.esc) { if (ev.key === 'Tab') delete ta.dataset.esc; return; }
+        ev.preventDefault();
+        const a = ta.selectionStart, b2 = ta.selectionEnd;
+        ta.value = ta.value.slice(0, a) + '  ' + ta.value.slice(b2); ta.selectionStart = ta.selectionEnd = a + 2;
+        ta.dispatchEvent(new Event('input'));
+      });
+      on(ta, 'keyup', (ev) => { if (ev.key === 'Escape') ta.dataset.esc = '1'; });
+    });
+    markWritten();
 
     const grade = () => {
       if (graded) return;
@@ -846,6 +898,21 @@
       });
       const rec = recordAttempt('exam', key, right, qs.length);
       delete S.current[ck]; save(true);
+      $$('.code-input').forEach((ta) => { ta.readOnly = true; });
+      ps.forEach((p, pi) => {
+        const pts = rubricPoints(p);
+        $(`#p-${pi} .pfb`).innerHTML = `<div class="feedback"><div class="fb-title">${icon('code')}Solución de referencia</div>${md(p.model)}
+          ${pts.length ? `<p class="rubric-title"><strong>Criterios de corrección</strong> · marcar los que cumple la solución escrita</p>
+          <ul class="rubric">${rubricItems(p).map((r, ri) => `<li><label><input type="checkbox" data-p="${pi}" data-r="${ri}"><span>${md(r.text)}</span><span class="rp">${fmtPts(pts[ri])} p.</span></label></li>`).join('')}</ul>
+          <p class="pscore">Nota orientativa del ejercicio: <strong id="ps-${pi}">0</strong> de ${fmtPts(p.points || 0)}</p>` : ''}</div>`;
+      });
+      const practicalScore = () => ps.reduce((sum, p, pi) => {
+        const pts = rubricPoints(p);
+        const got = $$(`input[data-p="${pi}"]:checked`).reduce((a, cb) => a + pts[Number(cb.dataset.r)], 0);
+        const el = $('#ps-' + pi); if (el) el.textContent = fmtPts(got);
+        $(`.exam-nav a[data-p="${pi}"]`)?.classList.toggle('ok', got > 0);
+        return sum + got;
+      }, 0);
       const pts = right * 0.5, p = pct(right, qs.length);
       const C2 = 2 * Math.PI * 54;
       const tier = p >= 75 ? 'ok' : p >= 50 ? 'mid' : 'low';
@@ -855,11 +922,24 @@
         <div class="ring ${tier}"><svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="54"/><circle class="val" cx="60" cy="60" r="54" stroke-dasharray="${C2}" stroke-dashoffset="${C2}"/></svg>
           <div class="label"><span class="pct">${fmtNum(pts)}</span><span class="sub">de 4 puntos</span></div></div>
         <div><h2>${right} de ${qs.length} correctas</h2>
+          ${ps.length ? `<div class="total-note"><span>Tipo test <strong>${fmtPts(pts)}</strong> / 4</span><span>Práctica <strong id="pr-score">0</strong> / ${fmtPts(pTotal)}</span><span class="tn-total">Nota orientativa <strong id="total-score">${fmtPts(pts)}</strong> / ${fmtNum(4 + pTotal, 0)}</span></div>
+          <p class="hint" style="display:block;margin:6px 0 0">La parte práctica se autoevalúa: marcar los criterios que cumple cada solución, en la parte práctica, más abajo. <a href="#practical" id="go-practical">Ir a la parte práctica</a></p>` : ''}
           <p class="muted" style="margin:0">${p >= 75 ? 'Buen nivel para la parte tipo test.' : p >= 50 ? 'Aprobaría esta parte, pero hay margen: revisar las falladas.' : 'Conviene repasar los temas de las preguntas falladas y repetir.'}</p>
           <div class="meta-row"><span class="chip plain">${icon('clock')}${fmtTime(secs)}</span>${rec.improved && rec.prevBest != null ? `<span class="chip ok">${icon('award')}Nuevo mejor resultado</span>` : ''}${right < qs.length ? `<span class="chip warn">${icon('rotate')}${plural(qs.length - right, 'pregunta añadida', 'preguntas añadidas')} al repaso</span>` : ''}</div>
           <div class="actions">${random ? `<a class="btn" href="#/simulacro/aleatorio" id="again">${icon('shuffle')}Otro simulacro aleatorio</a>` : `<button class="btn" id="again" type="button">${icon('rotate')}Repetir</button>`}<a class="btn secondary" href="#/simulacros">Ver los simulacros</a>${right < qs.length ? `<a class="btn ghost" href="#/repaso">Ir al repaso</a>` : ''}</div>
         </div></section>`;
       on($('#again'), 'click', (ev) => { ev.preventDefault(); delete S.current[ck]; save(true); simulacroPage(n); });
+      if (ps.length) {
+        const refresh = () => {
+          const pr = practicalScore();
+          $('#pr-score').textContent = fmtPts(pr);
+          $('#total-score').textContent = fmtPts(pts + pr);
+          const e2 = S.exam[key]; if (e2) { e2.practical = pr; e2.practicalTotal = pTotal; save(); }
+        };
+        $$('.rubric input').forEach((cb) => on(cb, 'change', refresh));
+        on($('#go-practical'), 'click', (ev) => { ev.preventDefault(); $('#practical').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+        refresh();
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
       requestAnimationFrame(() => requestAnimationFrame(() => { const v = $('#exam-result .ring .val'); if (v) v.style.strokeDashoffset = String(C2 * (1 - p / 100)); }));
       renderNav(currentKey);
@@ -886,22 +966,21 @@
 
   // ---------- Progress ----------
   function progressPage() {
-    const keys = Object.keys(Q).map(Number).sort((a, b) => a - b);
-    const rows = keys.map((n) => {
+    const rows = QUIZ_ORDER.map((n) => {
       const r = S.quiz[n], total = r?.total || objective(Q[n].questions), p = r ? pct(r.best, total) : 0;
-      return `<tr><td><a href="#/quiz/${n}"><strong>Quiz ${n}</strong></a> · ${esc(Q[n].title)}</td><td class="num">${r?.attempts || 0}</td><td class="num">${r ? `${r.last}/${total}` : '—'}</td><td class="num">${r ? `${r.best}/${total}` : '—'}</td><td style="min-width:120px">${r ? bar(p, p >= 70 ? 'ok' : '') : '<span class="muted">Sin empezar</span>'}</td><td class="num">${r?.at ? fmtShort(r.at) : '—'}</td></tr>`;
+      return `<tr><td><a href="#/quiz/${n}"><strong>${esc(quizName(n))}</strong></a> · ${esc(Q[n].title)}</td><td class="num">${r?.attempts || 0}</td><td class="num">${r ? `${r.last}/${total}` : '—'}</td><td class="num">${r ? `${r.best}/${total}` : '—'}</td><td style="min-width:120px">${r ? bar(p, p >= 70 ? 'ok' : '') : '<span class="muted">Sin empezar</span>'}</td><td class="num">${r?.at ? fmtShort(r.at) : '—'}</td></tr>`;
     }).join('');
     const exKeys = [...E.map((x) => String(x.n)), 'aleatorio'];
     const exRows = exKeys.map((k) => {
       const r = S.exam[k];
-      return `<tr><td><a href="#/simulacro/${k}"><strong>${k === 'aleatorio' ? 'Simulacro aleatorio' : 'Simulacro ' + k}</strong></a></td><td class="num">${r?.attempts || 0}</td><td class="num">${r ? fmtNum(r.last * 0.5) : '—'}</td><td class="num">${r ? fmtNum(r.best * 0.5) : '—'}</td><td class="num">${r?.at ? fmtShort(r.at) : '—'}</td></tr>`;
+      return `<tr><td><a href="#/simulacro/${k}"><strong>${k === 'aleatorio' ? 'Simulacro aleatorio' : 'Simulacro ' + k}</strong></a></td><td class="num">${r?.attempts || 0}</td><td class="num">${r ? fmtNum(r.last * 0.5) : '—'}</td><td class="num">${r ? fmtNum(r.best * 0.5) : '—'}</td>${HAS_PRACTICAL ? `<td class="num">${r?.practical != null ? `${fmtPts(r.practical)} / ${fmtPts(r.practicalTotal || 6)}` : '—'}</td>` : ''}<td class="num">${r?.at ? fmtShort(r.at) : '—'}</td></tr>`;
     }).join('');
     render(`
       ${pageHead({ path: [['Progreso', '']], eyebrow: 'Seguimiento', title: 'Progreso', lead: 'Resultados guardados en este navegador. No se envían a ningún sitio ni cuentan para la evaluación: si se cambia de navegador o de dispositivo, se empieza de cero.' })}
       ${sectionHead('Quizzes')}
       <div class="table-wrap"><table><thead><tr><th>Quiz</th><th class="num">Intentos</th><th class="num">Último</th><th class="num">Mejor</th><th>Nivel</th><th class="num">Fecha</th></tr></thead><tbody>${rows}</tbody></table></div>
       ${sectionHead('Simulacros')}
-      <div class="table-wrap"><table><thead><tr><th>Simulacro</th><th class="num">Intentos</th><th class="num">Último</th><th class="num">Mejor</th><th class="num">Fecha</th></tr></thead><tbody>${exRows}</tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>Simulacro</th><th class="num">Intentos</th><th class="num">Test, último</th><th class="num">Test, mejor</th>${HAS_PRACTICAL ? '<th class="num">Práctica, último</th>' : ''}<th class="num">Fecha</th></tr></thead><tbody>${exRows}</tbody></table></div>
       ${sectionHead('Datos')}
       <div class="card" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
         <p style="margin:0;max-width:60ch">Borrar el progreso elimina resultados, quizzes a medias y la lista de repaso de este navegador. No se puede deshacer.</p>
@@ -947,7 +1026,7 @@
     for (const [t, u] of C.resources) add({ type: 'doc', title: t, sub: 'Recursos del curso', href: u, ext: true, text: '', ic: 'external' });
     for (const [id, e] of Object.entries(QI)) {
       const q = e.q;
-      add({ type: 'question', title: plain(q.q), sub: e.quiz ? `Quiz ${e.quiz} · ${Q[e.quiz].title}` : `Simulacro ${e.exam}`, href: e.quiz ? `#/quiz/${e.quiz}` : `#/simulacro/${e.exam}`, text: plain([...(q.choices || []), q.why || ''].join(' ')), ic: 'check-square', id });
+      add({ type: 'question', title: plain(q.q), sub: e.quiz ? `${quizName(e.quiz)} · ${Q[e.quiz].title}` : `Simulacro ${e.exam}`, href: e.quiz ? `#/quiz/${e.quiz}` : `#/simulacro/${e.exam}`, text: plain([...(q.choices || []), q.why || ''].join(' ')), ic: 'check-square', id });
     }
     return items;
   }

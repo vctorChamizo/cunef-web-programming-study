@@ -38,7 +38,8 @@ disk and on GitHub Pages.
 - **Quizzes**: one question at a time with immediate feedback, keyboard shortcuts (A-D, Enter),
   resume after leaving, results with a full review and "retry only the failed ones".
 - **Practice exams**: the three fixed ones plus a random one (3 + 3 + 2 questions from blocks I, II
-  and III), question navigator, indicative timer, grade out of 4.
+  and III), question navigator, indicative timer, grade out of 4; when the data includes a practical
+  part, self-assessed exercises with a rubric and an indicative grade out of 10.
 - **Error review**: every failed question is kept until it is answered correctly anywhere.
 - **Search** (`Ctrl K`, `⌘ K` or `/`) across guide sections, questions, sessions, labs and docs.
 - **Progress** page, light and dark themes, mobile layout, offline support.
@@ -59,6 +60,51 @@ built in the course corpus (`cunef/01-asignaturas/03-evaluacion/examenes/prepara
 
 The coordinator's material is used with his permission. To update the content, regenerate it there
 and copy `sitio/data/*.js` into `site/data/`.
+
+`site/data/course.js` is hand-written in this repository (weeks, sessions, labs, links, quiz
+placeholders). Copy it back to `sitio/data/` in the corpus before regenerating, so the two stay equal.
+
+### Data contract for new content
+
+**Quizzes without a lab.** A quiz is keyed by its lab number (`"1"` to `"10"`) or, when there is no
+lab, by a word. Two are already announced in `course.js` (`quizMeta` and the `quizzes` list of each
+block) and show as "Próximamente" until `quizzes.js` contains them under the same key:
+
+```js
+window.QUIZZES.dom = {           // also: window.QUIZZES.context (Context API, session 37)
+  title: 'Manipulación del DOM',
+  lab: null,                      // no lab: the site shows "Sin laboratorio"
+  sessions: '10-11',
+  questions: [ /* same question format as quizzes 1-10: mc, tf, fib, essay */ ],
+};
+```
+
+**Practical part of the practice exams.** Each entry of `window.EXAMS` may carry `practical`, an
+array of exercises worth 6 points in total. The test part keeps working as before; with `practical`
+the exam page adds the exercises, a code box for each one and, after grading, the reference
+solution with a rubric the student ticks to get an indicative grade out of 10. The random practice
+exam takes one exercise of each `kind` from all the practice exams.
+
+```js
+practical: [
+  {
+    id: 's1-js',                  // unique across all practice exams
+    kind: 'js',                   // 'js' | 'react' | 'express'
+    title: 'Triplicar los impares',
+    points: 2,
+    statement: 'Markdown: text, `code` and fenced code blocks.',
+    starter: '// Código de partida que aparece en el recuadro\n',
+    model: 'Markdown with the reference solution, usually a fenced code block.',
+    rubric: [                     // a string, or { text, points }; strings share the remaining points
+      { text: 'Recorre el array con `filter` y `map`', points: 1 },
+      'Devuelve un array nuevo sin modificar el original',
+    ],
+  },
+]
+```
+
+The reference exams in `cunef/.../examenes/referencia/` are for internal use only and must not be
+published: practical exercises have to be original, with the same format and difficulty.
 
 ## Preview locally
 
