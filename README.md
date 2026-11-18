@@ -22,6 +22,8 @@ site/                 everything that is published
     course.js         weeks, sessions, labs, practices and links (hand-written, sources in comments)
     quizzes.js        GENERATED: quizzes 1-10 and practice exams
     guides.js         GENERATED: theory guides, converted from Markdown
+    exercises.js      practical exercises (study mode) and the practical part of practice exams 1-3
+    mock-exams.js     complete mock exams 4-6: test part and practical part
 .github/workflows/    syntax check and Pages deployment
 ```
 
@@ -40,6 +42,8 @@ disk and on GitHub Pages.
 - **Practice exams**: the three fixed ones plus a random one (3 + 3 + 2 questions from blocks I, II
   and III), question navigator, indicative timer, grade out of 4; when the data includes a practical
   part, self-assessed exercises with a rubric and an indicative grade out of 10.
+- **Practical exercises**: ten short exercises (fix, complete, connect, explain) with two progressive
+  hints, the reference solution on request and a rubric for self-assessment out of 10.
 - **Error review**: every failed question is kept until it is answered correctly anywhere.
 - **Search** (`Ctrl K`, `⌘ K` or `/`) across guide sections, questions, sessions, labs and docs.
 - **Progress** page, light and dark themes, mobile layout, offline support.
@@ -60,6 +64,10 @@ built in the course corpus (`cunef/01-asignaturas/03-evaluacion/examenes/prepara
 
 The coordinator's material is used with his permission. To update the content, regenerate it there
 and copy `sitio/data/*.js` into `site/data/`.
+
+`site/data/exercises.js` and `site/data/mock-exams.js` are hand-written here as well; the Markdown
+versions in `cunef/01-asignaturas/03-evaluacion/examenes/` (`ejercicios-practicos/` and
+`simulacros-completos/`) are exported from them.
 
 `site/data/course.js` is hand-written in this repository (weeks, sessions, labs, links, quiz
 placeholders). Copy it back to `sitio/data/` in the corpus before regenerating, so the two stay equal.

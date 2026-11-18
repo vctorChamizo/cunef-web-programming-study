@@ -2,7 +2,10 @@
 // G247 study site: hash router, pages, quiz and practice-exam engines, search and local progress.
 // Plain JavaScript, no dependencies. Content comes from data/*.js (COURSE, QUIZZES, EXAMS, GUIDES).
 (() => {
-  const C = window.COURSE, Q = window.QUIZZES || {}, E = window.EXAMS || [], G = window.GUIDES || {};
+  const C = window.COURSE, Q = window.QUIZZES || {}, G = window.GUIDES || {};
+  const X = window.EXERCISES || [], XB = Object.fromEntries(X.map((x) => [x.id, x]));
+  // Practice exams: the generated ones (quizzes.js) plus the complete mock exams (mock-exams.js).
+  const E = [...(window.EXAMS || []), ...(window.MOCK_EXAMS || [])];
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const main = $('#main');
@@ -24,6 +27,25 @@
       ? '<pre><code>' + esc(chunk.replace(/\n$/, '')) + '</code></pre>'
       : inline(chunk.replace(/^\n+|\n+$/g, '')))).join('');
   }
+  // Block Markdown for exercises: paragraphs, lists, tables and fenced code.
+  function mdBlock(src) {
+    return String(src ?? '').split(/```[a-z]*\n([\s\S]*?)```/).map((chunk, i) => {
+      if (i % 2) return '<pre><code>' + esc(chunk.replace(/\n$/, '')) + '</code></pre>';
+      return chunk.split(/\n{2,}/).map((b) => b.trim()).filter(Boolean).map((b) => {
+        const lines = b.split('\n');
+        if (lines.every((l) => /^\|.*\|$/.test(l.trim()))) {
+          const rows = lines.filter((l) => !/^\|[\s:|-]+\|$/.test(l.trim())).map((l) => l.trim().slice(1, -1).split('|').map((c) => c.trim()));
+          return `<div class="table-wrap"><table><thead><tr>${rows[0].map((c) => `<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${rows.slice(1).map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+        }
+        if (lines.every((l) => /^\d+\.\s/.test(l))) return `<ol>${lines.map((l) => `<li>${inline(l.replace(/^\d+\.\s/, ''))}</li>`).join('')}</ol>`;
+        if (lines.every((l) => /^-\s/.test(l))) return `<ul>${lines.map((l) => `<li>${inline(l.replace(/^-\s/, ''))}</li>`).join('')}</ul>`;
+        const head = lines.findIndex((l) => /^(\d+\.|-)\s/.test(l));
+        if (head > 0 && lines.slice(head).every((l) => /^(\d+\.|-)\s/.test(l))) return mdBlock(lines.slice(0, head).join('\n')) + mdBlock(lines.slice(head).join('\n'));
+        return `<p>${inline(b)}</p>`;
+      }).join('');
+    }).join('');
+  }
+  const codeFile = (f, open = true) => `<figure class="code-file"><figcaption><span>${esc(f.name)}</span><button class="copy-mini" type="button" data-copy>${icon('copy')}Copiar</button></figcaption><pre${open ? '' : ' hidden'}><code>${esc(f.code)}</code></pre></figure>`;
   const plain = (s) => String(s ?? '').replace(/```[a-z]*\n[\s\S]*?```/g, ' […] ').replace(/[`*]/g, '').replace(/\s+/g, ' ').trim();
   const fold = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const fmtNum = (n, d = 1) => n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -63,7 +85,7 @@
     let s = null;
     try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { s = null; }
     if (!s || typeof s !== 'object') s = {};
-    for (const k of ['quiz', 'exam', 'wrong', 'current']) if (!s[k] || typeof s[k] !== 'object') s[k] = {};
+    for (const k of ['quiz', 'exam', 'wrong', 'current', 'ex']) if (!s[k] || typeof s[k] !== 'object') s[k] = {};
     if (!s.migrated) { // best scores saved by the first version of the site
       try {
         const old = JSON.parse(localStorage.getItem('g247-progress') || '{}');
@@ -120,6 +142,7 @@
       </div>
       <div class="nav-group"><div class="nav-label">Practicar</div>
         ${navLink('#/quizzes', 'Quizzes por laboratorio', 'quizzes', active, '', icon('check-square'))}
+        ${X.length ? navLink('#/ejercicios', 'Ejercicios prácticos', 'ejercicios', active, '', icon('code')) : ''}
         ${navLink('#/simulacros', 'Simulacros del examen', 'simulacros', active, '', icon('clipboard'))}
         ${navLink('#/repaso', 'Repaso de errores', 'repaso', active, wrong ? `<span class="badge">${wrong}</span>` : '', icon('rotate'))}
       </div>
@@ -303,10 +326,12 @@
       }).join('')}</div>
 
       ${sectionHead('Preparar el examen')}
-      <div class="grid-4">
+      <div class="grid-3">
         <a class="card" href="#/guia/I">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('book')}</span></div><h3>Guías teóricas</h3><p>Explicaciones completas de ${listRomans(BLOCKS.filter((b) => b.guide && G[b.guide]))}, con ejemplos de clase y errores habituales.</p></a>
         <a class="card" href="#/quizzes">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('check-square')}</span></div><h3>Quizzes</h3><p>${quizKeys.length} quizzes, uno por laboratorio, con la explicación de cada respuesta.</p></a>
-        <a class="card" href="#/simulacros">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('clipboard')}</span></div><h3>Simulacros</h3><p>La parte tipo test del examen: 8 preguntas de 0,5 puntos, sin penalización.</p></a>
+        ${X.length ? `<a class="card" href="#/ejercicios">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('code')}</span></div><h3>Ejercicios prácticos</h3><p>${X.length} ejercicios cortos como los de la parte práctica, con pistas, solución y criterios de corrección.</p></a>` : ''}
+        <a class="card" href="#/simulacros">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('clipboard')}</span></div><h3>Simulacros</h3><p>El examen completo: 8 preguntas tipo test (4 puntos) y 3 ejercicios prácticos (6 puntos).</p></a>
+        <a class="card" href="#/recursos">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('link')}</span></div><h3>Laboratorios</h3><p>Enunciados y soluciones: repetirlos sin mirar la solución es la mejor preparación para la parte práctica.</p></a>
         <a class="card" href="#/repaso">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('rotate')}</span>${wrong ? `<span class="badge">${wrong}</span>` : ''}</div><h3>Repaso de errores</h3><p>Las preguntas falladas se guardan aquí hasta que se responden bien.</p></a>
       </div>`, '');
   }
@@ -765,6 +790,20 @@
       <div class="grid">${E.map(examCard).join('')}${randomExamCard()}</div>`, 'Simulacros');
   }
 
+  // An exercise (exercises.js format) becomes a practical item of a practice exam, worth `points`.
+  function toPractical(ex, points = 2) {
+    const edit = ex.files.find((f) => f.name === ex.edit) || ex.files[ex.files.length - 1];
+    return {
+      id: ex.id, kind: ex.kind, title: ex.title, points, ex,
+      starter: ex.answerStarter ?? edit.code,
+      rubric: ex.rubric.map((r) => ({ text: r.text, points: (r.points * points) / 10 })),
+    };
+  }
+  for (const x of E) {
+    const src = x.practical || (window.EXAM_PRACTICAL || {})[x.n];
+    if (!src) continue;
+    x.practical = src.map((it) => (typeof it === 'string' ? (XB[it] ? toPractical(XB[it]) : null) : it.files ? toPractical(it) : it)).filter(Boolean);
+  }
   // Practical exercises (EXAMS[i].practical): one of each kind in the random practice exam.
   const PRACTICAL = E.flatMap((x) => (x.practical || []).map((p) => ({ ...p, exam: x.n })));
   const PI = Object.fromEntries(PRACTICAL.map((p) => [p.id, p]));
@@ -820,7 +859,7 @@
           ${ps.map((p, pi) => `<section class="qcard pcard" id="p-${pi}" data-pid="${esc(p.id)}">
             <div class="qhead"><span class="qnum">Ejercicio ${pi + 1} de ${ps.length}</span><span class="chip accent">${fmtPts(p.points || 0)} ${p.points === 1 ? 'punto' : 'puntos'}</span></div>
             <h3 class="ptitle">${esc(p.title)}</h3>
-            <div class="qtext">${md(p.statement)}</div>
+            ${p.ex ? `<div class="qtext prose-sm">${mdBlock(p.ex.statement)}</div>${p.ex.files.map((f) => codeFile(f)).join('')}<div class="expected"><strong>Resultado esperado</strong>${mdBlock(p.ex.expected)}</div>` : `<div class="qtext">${md(p.statement)}</div>`}
             <label class="sr-only" for="code-${pi}">Solución del ejercicio ${pi + 1}</label>
             <textarea class="code-input" id="code-${pi}" spellcheck="false" autocapitalize="off" autocomplete="off" rows="${Math.max(8, String(cur.code[p.id] ?? p.starter ?? '').split('\n').length + 3)}">${esc(cur.code[p.id] ?? p.starter ?? '')}</textarea>
             <div class="pfb"></div></section>`).join('')}` : ''}
@@ -875,6 +914,7 @@
       on(ta, 'keyup', (ev) => { if (ev.key === 'Escape') ta.dataset.esc = '1'; });
     });
     markWritten();
+    wireCopy(main);
 
     const grade = () => {
       if (graded) return;
@@ -901,7 +941,7 @@
       $$('.code-input').forEach((ta) => { ta.readOnly = true; });
       ps.forEach((p, pi) => {
         const pts = rubricPoints(p);
-        $(`#p-${pi} .pfb`).innerHTML = `<div class="feedback"><div class="fb-title">${icon('code')}Solución de referencia</div>${md(p.model)}
+        $(`#p-${pi} .pfb`).innerHTML = `<div class="feedback"><div class="fb-title">${icon('code')}Solución de referencia</div>${p.ex ? `<pre><code>${esc(p.ex.solution.code)}</code></pre><div class="prose-sm">${mdBlock(p.ex.solution.explanation)}</div>` : md(p.model)}
           ${pts.length ? `<p class="rubric-title"><strong>Criterios de corrección</strong> · marcar los que cumple la solución escrita</p>
           <ul class="rubric">${rubricItems(p).map((r, ri) => `<li><label><input type="checkbox" data-p="${pi}" data-r="${ri}"><span>${md(r.text)}</span><span class="rp">${fmtPts(pts[ri])} p.</span></label></li>`).join('')}</ul>
           <p class="pscore">Nota orientativa del ejercicio: <strong id="ps-${pi}">0</strong> de ${fmtPts(p.points || 0)}</p>` : ''}</div>`;
@@ -949,6 +989,110 @@
     on($('#grade-s'), 'click', () => { if (!confirmArmed && Object.keys(cur.picks).length < qs.length) $('#exam-actions').scrollIntoView({ behavior: 'smooth', block: 'center' }); grade(); });
   }
 
+  // ---------- Practical exercises (study mode) ----------
+  const EX_CATS = ['Corrección de errores', 'Completar código', 'Integración', 'Comprensión de código'];
+  function wireCopy(root) {
+    $$('[data-copy]', root).forEach((b) => on(b, 'click', async () => {
+      const pre = b.closest('figure').querySelector('pre');
+      if (await copyText(pre.innerText)) { b.innerHTML = `${icon('check')}Copiado`; setTimeout(() => { b.innerHTML = `${icon('copy')}Copiar`; }, 1500); }
+    }));
+  }
+  function exerciseCard(x) {
+    const r = S.ex[x.id];
+    return `<a class="card ex-card" href="#/ejercicio/${x.id}">${icon('arrow-right', 'go')}
+      <div class="card-top"><span class="q-num">Ejercicio ${esc(x.id)}</span><span class="chip plain">${esc(x.tech)}</span></div>
+      <h3>${esc(x.title)}</h3>
+      <p>${x.concepts.map(esc).join(' · ')}</p>
+      <div class="card-foot"><span class="chip plain">${icon('clock')}${esc(x.minutes)} min</span><span class="chip plain">${esc(x.level)}</span>${r?.score != null ? `<span class="chip ${r.score >= 7 ? 'ok' : r.score >= 5 ? 'warn' : 'bad'}">${icon('award')}${fmtPts(r.score)} / 10</span>` : r?.code ? '<span class="chip warn">Empezado</span>' : ''}</div></a>`;
+  }
+  function exercisesPage() {
+    const done = X.filter((x) => S.ex[x.id]?.score != null).length;
+    render(`
+      ${pageHead({ path: [['Ejercicios prácticos', '']], eyebrow: 'Practicar', title: 'Ejercicios prácticos',
+        lead: 'Ejercicios cortos como los de la parte práctica del examen: corregir un error, completar un fragmento, conectar piezas que ya existen o explicar un código. Cada uno trae dos pistas, la solución de referencia y los criterios de corrección para autoevaluarse sobre 10.',
+        meta: `<span class="chip plain">${done} de ${X.length} autoevaluados</span><span class="chip plain">${icon('clock')}5-15 minutos cada uno</span>` })}
+      <div class="callout info">${icon('info')}<div>Se recomienda escribir la solución sin abrir las pistas y consultar la solución solo al terminar. En el examen no hay pistas.</div></div>
+      ${EX_CATS.map((cat) => { const xs = X.filter((x) => x.category === cat); return xs.length ? `${sectionHead(esc(cat))}<div class="grid">${xs.map(exerciseCard).join('')}</div>` : ''; }).join('')}`, 'Ejercicios prácticos');
+  }
+  function exercisePage(id) {
+    const x = XB[id];
+    if (!x) return notFound();
+    const st = S.ex[id] || (S.ex[id] = {});
+    const edit = x.files.find((f) => f.name === x.edit) || x.files[x.files.length - 1];
+    const startCode = x.answerStarter ?? edit.code;
+    const i = X.indexOf(x), prev = X[i - 1], next = X[i + 1];
+    setLast(`#/ejercicio/${id}`, `Ejercicio ${id} · ${x.title}`, 'Ejercicios prácticos');
+    render(`
+      ${pageHead({ path: [['Ejercicios prácticos', '#/ejercicios'], [`Ejercicio ${x.id}`, '']], eyebrow: `Ejercicio ${esc(x.id)} · ${esc(x.category)}`, title: esc(x.title),
+        meta: `<span class="chip plain">${icon('code')}${esc(x.tech)}</span><span class="chip plain">${esc(x.level)}</span><span class="chip plain">${icon('clock')}${esc(x.minutes)} min</span>${x.concepts.map((c) => `<span class="chip plain">${esc(c)}</span>`).join('')}` })}
+      <div class="ex-layout">
+        <section class="card ex-sec"><h2>Enunciado</h2><div class="prose-sm">${mdBlock(x.statement)}</div></section>
+        <section class="card ex-sec"><h2>Código inicial</h2>${x.files.map((f) => codeFile(f)).join('')}</section>
+        <section class="card ex-sec"><h2>Resultado esperado</h2><div class="prose-sm">${mdBlock(x.expected)}</div></section>
+        <section class="card ex-sec"><h2>Solución propia</h2>
+          <p class="muted" style="margin:0 0 10px;font-size:.9rem">Se guarda en este navegador. ${x.answerStarter ? '' : `Parte del fichero <code>${esc(edit.name)}</code>.`}</p>
+          <label class="sr-only" for="ex-code">Solución propia</label>
+          <textarea class="code-input" id="ex-code" spellcheck="false" autocapitalize="off" autocomplete="off" rows="${Math.min(28, Math.max(10, String(st.code ?? startCode).split('\n').length + 2))}">${esc(st.code ?? startCode)}</textarea>
+          <div class="actions" style="margin-top:12px"><button class="btn ghost sm" id="ex-reset" type="button">${icon('rotate')}Volver al código inicial</button></div>
+        </section>
+        <section class="card ex-sec"><h2>Pistas</h2>
+          <div id="hints">${x.hints.map((h, k) => `<div class="hint-box" data-h="${k}" ${k < (st.hints || 0) ? '' : 'hidden'}><span class="hint-n">Pista ${k + 1}</span><div>${mdBlock(h)}</div></div>`).join('')}</div>
+          <button class="btn secondary sm" id="hint-btn" type="button"${(st.hints || 0) >= x.hints.length ? ' hidden' : ''}>${icon('info')}Ver la pista ${(st.hints || 0) + 1}</button>
+        </section>
+        <section class="card ex-sec" id="sol-sec"><h2>Solución y autoevaluación</h2>
+          <div id="sol"${st.open ? '' : ' hidden'}>
+            <h3>Solución de referencia</h3><pre><code>${esc(x.solution.code)}</code></pre>
+            <h3>Cambios</h3><ul>${x.solution.changes.map((c) => `<li>${inline(c)}</li>`).join('')}</ul>
+            <h3>Explicación</h3><div class="prose-sm">${mdBlock(x.solution.explanation)}</div>
+            ${x.solution.alternatives ? `<h3>Soluciones alternativas aceptables</h3><div class="prose-sm">${mdBlock(x.solution.alternatives)}</div>` : ''}
+            <h3>Criterios de corrección</h3>
+            <p class="muted" style="margin:0 0 8px;font-size:.9rem">Marcar los criterios que cumple la solución propia.</p>
+            <ul class="rubric">${x.rubric.map((r, k) => `<li><label><input type="checkbox" data-r="${k}"${st.checks?.[k] ? ' checked' : ''}><span>${inline(r.text)}</span><span class="rp">${fmtPts(r.points)} p.</span></label></li>`).join('')}</ul>
+            ${x.penalties?.length ? `<div class="callout warn" style="margin-top:12px">${icon('alert')}<div><strong>Penalizaciones</strong><ul>${x.penalties.map((t) => `<li>${inline(t)}</li>`).join('')}</ul></div></div>` : ''}
+            ${x.partial ? `<p class="muted" style="font-size:.9rem"><strong>Puntuación parcial.</strong> ${inline(x.partial)}</p>` : ''}
+            <div class="ex-score"><span>Nota orientativa</span><strong id="ex-score">0</strong><span>/ 10</span></div>
+          </div>
+          <button class="btn" id="sol-btn" type="button"${st.open ? ' hidden' : ''}>${icon('check')}Ver la solución y autoevaluar</button>
+        </section>
+      </div>
+      <nav class="ex-pager">${prev ? `<a class="btn secondary" href="#/ejercicio/${prev.id}">${icon('arrow-left')}Ejercicio ${prev.id}</a>` : '<span></span>'}${next ? `<a class="btn secondary" href="#/ejercicio/${next.id}">Ejercicio ${next.id}${icon('arrow-right')}</a>` : `<a class="btn secondary" href="#/ejercicios">Todos los ejercicios</a>`}</nav>`, `Ejercicio ${id}`);
+
+    wireCopy(main);
+    const ta = $('#ex-code');
+    on(ta, 'input', () => { st.code = ta.value; save(); });
+    on(ta, 'keydown', (ev) => {
+      if (ev.key !== 'Tab' || ev.shiftKey || ta.dataset.esc) { if (ev.key === 'Tab') delete ta.dataset.esc; return; }
+      ev.preventDefault();
+      const a = ta.selectionStart, b2 = ta.selectionEnd;
+      ta.value = ta.value.slice(0, a) + '  ' + ta.value.slice(b2); ta.selectionStart = ta.selectionEnd = a + 2;
+      st.code = ta.value; save();
+    });
+    on(ta, 'keyup', (ev) => { if (ev.key === 'Escape') ta.dataset.esc = '1'; });
+    on($('#ex-reset'), 'click', () => { if (!confirm('¿Sustituir la solución propia por el código inicial?')) return; ta.value = startCode; delete st.code; save(); });
+    on($('#hint-btn'), 'click', () => {
+      st.hints = Math.min(x.hints.length, (st.hints || 0) + 1); save();
+      $$('.hint-box').forEach((h) => { h.hidden = Number(h.dataset.h) >= st.hints; });
+      const b = $('#hint-btn');
+      if (st.hints >= x.hints.length) b.hidden = true; else b.innerHTML = `${icon('info')}Ver la pista ${st.hints + 1}`;
+    });
+    const score = () => {
+      const got = $$('#sol .rubric input').reduce((a, cb) => a + (cb.checked ? x.rubric[Number(cb.dataset.r)].points : 0), 0);
+      $('#ex-score').textContent = fmtPts(got);
+      return got;
+    };
+    on($('#sol-btn'), 'click', () => {
+      st.open = true; save();
+      $('#sol').hidden = false; $('#sol-btn').hidden = true;
+      $('#sol').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    $$('#sol .rubric input').forEach((cb) => on(cb, 'change', () => {
+      st.checks = st.checks || {};
+      st.checks[cb.dataset.r] = cb.checked;
+      st.score = score(); st.at = Date.now(); save();
+    }));
+    score();
+  }
+
   // ---------- Resources ----------
   function resourcesPage() {
     render(`
@@ -981,6 +1125,8 @@
       <div class="table-wrap"><table><thead><tr><th>Quiz</th><th class="num">Intentos</th><th class="num">Último</th><th class="num">Mejor</th><th>Nivel</th><th class="num">Fecha</th></tr></thead><tbody>${rows}</tbody></table></div>
       ${sectionHead('Simulacros')}
       <div class="table-wrap"><table><thead><tr><th>Simulacro</th><th class="num">Intentos</th><th class="num">Test, último</th><th class="num">Test, mejor</th>${HAS_PRACTICAL ? '<th class="num">Práctica, último</th>' : ''}<th class="num">Fecha</th></tr></thead><tbody>${exRows}</tbody></table></div>
+      ${X.length ? `${sectionHead('Ejercicios prácticos')}
+      <div class="table-wrap"><table><thead><tr><th>Ejercicio</th><th>Pistas vistas</th><th class="num">Autoevaluación</th><th class="num">Fecha</th></tr></thead><tbody>${X.map((x) => { const r = S.ex[x.id]; return `<tr><td><a href="#/ejercicio/${x.id}"><strong>${x.id}</strong></a> · ${esc(x.title)}</td><td>${r?.hints ? `${r.hints} de ${x.hints.length}` : '—'}</td><td class="num">${r?.score != null ? `${fmtPts(r.score)} / 10` : '—'}</td><td class="num">${r?.at ? fmtShort(r.at) : '—'}</td></tr>`; }).join('')}</tbody></table></div>` : ''}
       ${sectionHead('Datos')}
       <div class="card" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
         <p style="margin:0;max-width:60ch">Borrar el progreso elimina resultados, quizzes a medias y la lista de repaso de este navegador. No se puede deshacer.</p>
@@ -988,7 +1134,7 @@
       </div>`, 'Progreso');
     on($('#reset'), 'click', () => {
       if (!confirm('¿Borrar todo el progreso guardado en este navegador? No se puede deshacer.')) return;
-      for (const k of ['quiz', 'exam', 'wrong', 'current']) S[k] = {};
+      for (const k of ['quiz', 'exam', 'wrong', 'current', 'ex']) S[k] = {};
       delete S.last; delete S.guide; save(true);
       try { localStorage.removeItem('g247-progress'); } catch { /* ignore */ }
       toast('Progreso borrado'); renderNav('progreso'); progressPage();
@@ -1021,6 +1167,7 @@
     }
     items.filter((o) => o.type === 'guide').forEach((o) => { o.nt = fold(o.title); o.nx = fold(o.text); });
     for (const s of SESSIONS) add({ type: 'session', title: `Sesión ${s.n}: ${s.title}`, sub: `Bloque ${s.block.roman} · Semana ${s.week}`, href: `#/curso/${s.week}`, text: s.lab || '', ic: 'calendar' });
+    for (const x of X) add({ type: 'page', title: `Ejercicio ${x.id}: ${x.title}`, sub: `Ejercicios prácticos · ${x.category}`, href: `#/ejercicio/${x.id}`, text: [x.tech, ...x.concepts, plain(x.statement)].join(' '), ic: 'code' });
     for (const l of C.labs) add({ type: 'lab', title: `${l.id} · ${l.title}`, sub: l.brief ? 'Enunciado en GitHub' : 'Próximamente', href: l.brief || '#/recursos', ext: !!l.brief, text: 'laboratorio', ic: 'code' });
     for (const b of BLOCKS) for (const w of b.weekList) for (const [t, u] of w.links) add({ type: 'doc', title: t, sub: `Documentación · Semana ${w.n}`, href: u, ext: true, text: '', ic: 'external' });
     for (const [t, u] of C.resources) add({ type: 'doc', title: t, sub: 'Recursos del curso', href: u, ext: true, text: '', ic: 'external' });
@@ -1170,6 +1317,7 @@
       if (page === 'quiz') return 'quizzes';
       if (page === 'examen') return 'home';
       if (page === 'simulacro') return 'simulacros';
+      if (page === 'ejercicio') return 'ejercicios';
       return page;
     };
     currentKey = keyFor();
@@ -1182,6 +1330,8 @@
       case 'quizzes': return quizzesPage();
       case 'quiz': return quizPage(arg);
       case 'simulacros': return simulacrosPage();
+      case 'ejercicios': return exercisesPage();
+      case 'ejercicio': return exercisePage(arg);
       case 'simulacro': return simulacroPage(arg);
       case 'repaso': return arg === 'practicar' ? reviewRun(a3) : reviewPage();
       case 'curso': coursePage(); if (arg) document.getElementById('semana-' + arg)?.scrollIntoView({ block: 'start' }); return;

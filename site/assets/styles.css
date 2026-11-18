@@ -334,6 +334,31 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .total-note .tn-total { padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--text); }
 .exam-nav a.pnav { font-size: 0.72rem; }
 
+/* ---------- Practical exercises ---------- */
+.ex-layout { display: grid; gap: 16px; }
+.ex-sec h2 { font-size: 1.1rem; margin: 0 0 10px; }
+.ex-sec h3 { font-size: 0.98rem; margin: 18px 0 8px; }
+.prose-sm p { margin: 0 0 10px; }
+.prose-sm p:last-child { margin-bottom: 0; }
+.prose-sm ol, .prose-sm ul, .ex-sec ul { margin: 6px 0 10px; padding-left: 22px; }
+.prose-sm li + li, .ex-sec li + li { margin-top: 4px; }
+.prose-sm .table-wrap { margin: 8px 0; }
+.code-file { margin: 10px 0 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--surface-2); }
+.code-file figcaption { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px 6px 14px; border-bottom: 1px solid var(--line); font: 600 0.8rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--text-2); }
+.code-file pre { margin: 0; border: 0; border-radius: 0; }
+.copy-mini { display: inline-flex; align-items: center; gap: 5px; font: 600 0.75rem var(--font, inherit); color: var(--text-3); background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; cursor: pointer; }
+.copy-mini:hover { color: var(--accent); border-color: var(--accent-line); }
+.copy-mini .i { width: 13px; height: 13px; }
+.expected { margin-top: 12px; padding: 12px 14px; border-radius: var(--radius); background: var(--surface-2); border: 1px dashed var(--line-strong); font-size: 0.92rem; }
+.expected > strong { display: block; margin-bottom: 6px; }
+.hint-box { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; margin-bottom: 10px; border-radius: var(--radius); background: var(--warn-soft); border: 1px solid var(--warn-line); font-size: 0.93rem; }
+.hint-box .hint-n { flex: none; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--warn); padding-top: 3px; }
+.hint-box p { margin: 0; }
+.ex-score { display: flex; align-items: baseline; gap: 8px; margin-top: 16px; padding: 12px 16px; border-radius: var(--radius); background: var(--accent-soft); }
+.ex-score strong { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.ex-pager { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+.ex-card p { color: var(--text-2); }
+
 /* ---------- Resource links ---------- */
 .res-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
 .res-link { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); color: var(--text); text-decoration: none; min-width: 0; transition: border-color .15s, box-shadow .15s, transform .15s; }
