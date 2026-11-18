@@ -271,7 +271,6 @@
           <h1>${esc(C.title)}</h1>
           <p class="lead">Material de estudio de la asignatura: guías teóricas, un quiz por laboratorio con corrección inmediata, simulacros de la parte tipo test del examen y repaso de las preguntas falladas.</p>
           <div class="actions">
-            <a class="btn" href="${last ? esc(last.href) : '#/guia/I'}">${icon(last ? 'play' : 'book')}${last ? 'Continuar' : 'Empezar por la guía del bloque I'}</a>
             <a class="btn secondary" href="#/simulacro/aleatorio">${icon('shuffle')}Simulacro aleatorio</a>
           </div>
         </div>
@@ -342,13 +341,32 @@
       ${labRows(labs)}`, `Bloque ${b.roman}`);
   }
 
+  // ---------- Resource links ----------
+  // Labels are "Name — what it is"; the tile shows the name, the description and the site.
+  function monogram(name) {
+    const n = name.replace(/\(.*?\)/g, '').split(' / ')[0].trim();
+    if (n.length <= 4) return n;
+    const caps = n.replace(/[^A-Z]/g, '');
+    return caps.length >= 2 ? caps.slice(0, 2) : n.charAt(0).toUpperCase() + n.charAt(1);
+  }
+  function linkTile([label, url]) {
+    const [name, ...rest] = label.split(' — ');
+    let host = '';
+    try { host = new URL(url).hostname.replace(/^www\./, ''); } catch { /* keep empty */ }
+    return `<a class="res-link" href="${url}" target="_blank" rel="noopener">
+      <span class="res-mono${monogram(name).length > 3 ? ' long' : ''}" aria-hidden="true">${esc(monogram(name))}</span>
+      <span class="res-txt"><span class="res-name">${esc(name)}</span><span class="res-meta">${esc(rest.join(' — ') || host)}${rest.length ? ` · ${esc(host)}` : ''}</span></span>
+      ${icon('external', 'res-ext')}</a>`;
+  }
+  const linkGrid = (links, cls = '') => `<div class="res-grid ${cls}">${links.map(linkTile).join('')}</div>`;
+
   // ---------- Weeks (same order as the Canvas modules) ----------
   function weeksHtml(b) {
     return `<div class="weeks">${b.weekList.map((w) => `<section class="card week" id="semana-${w.n}" style="--bc:var(--${b.color})">
       <header class="week-head"><span class="week-n">Semana ${w.n}</span><h3>${esc(w.title)}</h3></header>
       <ol class="week-sessions">${w.sessions.map((s) => `<li class="${s.lab ? 'lab' : ''}"><span class="n">Sesión ${esc(s.n)}</span><span class="t">${esc(s.title)}</span>${s.lab ? `<span class="chip accent">${esc(s.lab)}</span>` : ''}</li>`).join('')}</ol>
       ${w.milestone ? `<p class="week-note">${icon('flag')}${esc(w.milestone)}</p>` : ''}
-      ${w.links.length ? `<div class="week-links">${w.links.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${esc(t)}${icon('external')}</a>`).join('')}</div>` : ''}
+      ${w.links.length ? `<div class="week-res">${linkGrid(w.links, 'compact')}</div>` : ''}
     </section>`).join('')}</div>`;
   }
   function coursePage() {
@@ -735,8 +753,7 @@
       ${pageHead({ path: [['Simulacros', '']], eyebrow: 'Practicar', title: 'Simulacros del examen',
         lead: 'Cada simulacro reproduce la parte tipo test del examen final: 8 preguntas de los tres bloques, 0,5 puntos cada una y sin penalización por error. Se responde todo y se corrige al final.',
         meta: `<span class="chip plain">${icon('award')}Parte tipo test: 4 de los 10 puntos del examen</span><span class="chip plain">${icon('clock')}Con cronómetro orientativo</span>` })}
-      <div class="grid">${E.map(examCard).join('')}${randomExamCard()}</div>
-      <div class="callout info" style="margin-top:28px">${icon('info')}<div>La parte práctica del examen (6 puntos) se prepara con los laboratorios: repetir cada uno desde el enunciado, sin mirar la solución, y compararlo después con ella. <a href="#/recursos">Ver los laboratorios</a>.</div></div>`, 'Simulacros');
+      <div class="grid">${E.map(examCard).join('')}${randomExamCard()}</div>`, 'Simulacros');
   }
 
   function randomExamIds() {
@@ -858,10 +875,12 @@
       ${sectionHead('Laboratorios')}
       ${labRows(C.labs)}
       ${sectionHead('Repositorios y material general')}
-      <div class="card week-links standalone">${C.resources.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${esc(t)}${icon('external')}</a>`).join('')}</div>
+      ${linkGrid(C.resources)}
       ${sectionHead('Documentación por semana', `<a href="#/curso">Mapa del curso ${icon('arrow-right')}</a>`)}
-      <div class="grid-3">${BLOCKS.map((b) => `<div class="card" style="--bc:var(--${b.color})"><p class="eyebrow" style="color:var(--${b.color})">Bloque ${b.roman}</p><h3>${esc(b.title)}</h3>
-        ${b.weekList.filter((w) => w.links.length).map((w) => `<div class="doc-week"><span class="doc-week-n">Semana ${w.n} · ${esc(w.title)}</span>${w.links.map(([t, u]) => `<a class="nav-link" href="${u}" target="_blank" rel="noopener"><span>${esc(t)}</span>${icon('external', 'muted')}</a>`).join('')}</div>`).join('')}</div>`).join('')}</div>`, 'Recursos');
+      <div class="res-blocks">${BLOCKS.map((b) => `<section class="res-block" style="--bc:var(--${b.color})">
+        <p class="eyebrow" style="color:var(--${b.color})">Bloque ${b.roman} · ${esc(b.title)}</p>
+        ${b.weekList.filter((w) => w.links.length).map((w) => `<div class="res-week"><div class="res-week-label"><span class="week-n">Semana ${w.n}</span><span>${esc(w.title)}</span></div>${linkGrid(w.links)}</div>`).join('')}
+      </section>`).join('')}</div>`, 'Recursos');
   }
 
   // ---------- Progress ----------

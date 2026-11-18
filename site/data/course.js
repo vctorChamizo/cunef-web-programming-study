@@ -27,7 +27,7 @@ window.COURSE = {
             { n: '5', title: 'Flexbox y Grid' },
             { n: '6', title: 'Laboratorio 2: página estática responsive', lab: 'L2' },
           ],
-          links: [['CSS — Documentación oficial (MDN)', 'https://developer.mozilla.org/es/docs/Web/CSS'], ['Flexbox Froggy — práctica interactiva de Flexbox', 'https://flexboxfroggy.com/#es']] },
+          links: [['CSS — Documentación oficial (MDN)', 'https://developer.mozilla.org/es/docs/Web/CSS'], ['Flexbox Froggy — Práctica interactiva de Flexbox', 'https://flexboxfroggy.com/#es']] },
         { n: 3, title: 'JavaScript: fundamentos',
           sessions: [
             { n: '7', title: 'JavaScript: variables y tipos de datos' },
@@ -63,14 +63,14 @@ window.COURSE = {
             { n: '17', title: 'Principios de diseño de APIs REST' },
             { n: '18', title: 'Laboratorio 5: API CRUD en memoria', lab: 'L5' },
           ],
-          links: [['Express — Routing', 'https://expressjs.com/es/guide/routing.html'], ['Express — Control de errores', 'https://expressjs.com/es/guide/error-handling.html']] },
+          links: [['Express — Guía de routing', 'https://expressjs.com/es/guide/routing.html'], ['Express — Guía de control de errores', 'https://expressjs.com/es/guide/error-handling.html']] },
         { n: 7, title: 'SQL y modelos',
           sessions: [
             { n: '20', title: 'Modelo relacional y PostgreSQL' },
             { n: '21', title: 'Consultas SQL y migraciones' },
             { n: '22', title: 'Laboratorio 6: SQL y capa de modelos', lab: 'L6' },
           ],
-          links: [['PostgreSQL — Documentación oficial', 'https://www.postgresql.org/docs/current/'], ['node-postgres (pg) — Documentación oficial', 'https://node-postgres.com/'], ['DBML / dbdiagram — Documentación oficial', 'https://dbdiagram.io/docs'], ['Imagen de Docker de PostgreSQL', 'https://hub.docker.com/_/postgres']] },
+          links: [['PostgreSQL — Documentación oficial', 'https://www.postgresql.org/docs/current/'], ['node-postgres (pg) — Documentación oficial', 'https://node-postgres.com/'], ['dbdiagram — Documentación oficial de DBML', 'https://dbdiagram.io/docs'], ['Docker — Imagen oficial de PostgreSQL', 'https://hub.docker.com/_/postgres']] },
         { n: 8, title: 'Autenticación y seguridad',
           sessions: [
             { n: '25', title: 'Autenticación: sesiones y JWT' },
@@ -143,8 +143,8 @@ window.COURSE = {
   ].map((l) => ({ ...l, brief: l.dir ? LABS_REPO + l.dir : null, solutionUrl: l.dir && l.solution ? LABS_REPO + l.dir + '/solution' : null })),
   // General resources (Canvas module "Recursos").
   resources: [
-    ['Repositorio de los laboratorios', 'https://github.com/vctorChamizo/cunef-web-programming-labs'],
-    ['Repositorio de ejemplos de clase', 'https://github.com/vctorChamizo/g247-labs-IACD-A-2026-27'],
-    ['Git — Cheat Sheet', 'https://education.github.com/git-cheat-sheet-education.pdf'],
+    ['Laboratorios — Repositorio con enunciados y soluciones', 'https://github.com/vctorChamizo/cunef-web-programming-labs'],
+    ['Ejemplos de clase — Repositorio con el código de las sesiones', 'https://github.com/vctorChamizo/g247-labs-IACD-A-2026-27'],
+    ['Git — Cheat sheet de comandos', 'https://education.github.com/git-cheat-sheet-education.pdf'],
   ],
 };
