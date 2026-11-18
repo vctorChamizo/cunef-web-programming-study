@@ -3,8 +3,8 @@
 // node-postgres with parameterized queries, JWT payload in req.user ({ sub, role }), pagination
 // responses as { page, limit, items }, React with useState/useEffect, Axios through a client created
 // with axios.create, async/await only, React Router imported from "react-router".
-// Not covered here: Context API and lab 10 (sessions 37-39, taught after these exercises were
-// written) and what the course leaves out (effect cleanup, nested routes).
+// Context API (sessions 37-38) is covered by C3. Left out, as in the course: effect cleanup and
+// nested routes.
 //
 // Inside these template literals, a backtick is written \` and a dollar-brace is written \${.
 'use strict';
@@ -741,8 +741,120 @@ export default TaskItems;` },
     penalties: ['\`onClick={handleDelete(task.id)}\`: no se conceden los 3 puntos del botón.', 'Quitar la tarea con \`splice\` sobre \`tasks\`: no se conceden los 3 puntos del estado.', 'Actualizar la lista antes del \`await\` y sin restaurarla en el \`catch\`: -1.'],
     partial: 'Si la tarea se borra en la API pero no desaparece de la pantalla, se conceden los criterios de 3 y 2 puntos.',
   },
+  // ------------------------------------------------------------------ C3
+  {
+    id: 'C3', kind: 'react', category: 'Integración', tech: 'React y Context API',
+    title: 'Leer la sesión desde el Context',
+    concepts: ['Context API', 'Provider', 'useContext', 'prop drilling'],
+    level: 'Intermedia-baja', minutes: '10',
+    statement: `Una aplicación ya tiene un \`AuthContext\` terminado, con el hook \`useAuth\`, igual que el visto en clase. Falta conectarlo: el Provider no envuelve todavía a la aplicación y la barra de navegación no lee la sesión.
+
+Se pide completar los tres puntos marcados, sin pasar la sesión por props:
+
+1. En \`main.jsx\`, hacer que la sesión esté disponible en toda la aplicación.
+2. En \`NavBar.jsx\`, importar lo necesario para leer la sesión.
+3. En \`NavBar.jsx\`, obtener \`isLoggedIn\` y \`signOut\` de la sesión.`,
+    files: [
+      { name: 'auth/AuthContext.jsx', lang: 'jsx', code: `import { createContext, useContext, useState } from "react";
+import api from "../api.js";
+
+const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
+  const [token, setToken] = useState(localStorage.getItem("token"));
+
+  async function signIn(email, password) {
+    const { data } = await api.post("/auth/login", { email, password });
+    localStorage.setItem("token", data.token);
+    setToken(data.token);
+  }
+
+  function signOut() {
+    localStorage.removeItem("token");
+    setToken(null);
+  }
+
+  const value = { isLoggedIn: Boolean(token), signIn, signOut };
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export const useAuth = () => useContext(AuthContext);` },
+      { name: 'main.jsx', lang: 'jsx', code: `import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router";
+import { AuthProvider } from "./auth/AuthContext.jsx";
+import App from "./App.jsx";
+
+createRoot(document.getElementById("root")).render(
+  <BrowserRouter>
+    {/* 1. Hacer que la sesión esté disponible en toda la aplicación */}
+    <App />
+  </BrowserRouter>
+);` },
+      { name: 'NavBar.jsx', lang: 'jsx', code: `import { Link } from "react-router";
+// 2. Importar lo necesario para leer la sesión
+
+function NavBar() {
+  // 3. Obtener isLoggedIn y signOut de la sesión (sustituir esta línea)
+  const isLoggedIn = false;
+
+  return (
+    <nav>
+      <Link to="/tasks">Tareas</Link>
+      {isLoggedIn
+        ? <button onClick={signOut}>Salir</button>
+        : <Link to="/login">Entrar</Link>}
+    </nav>
+  );
+}
+
+export default NavBar;` },
+    ],
+    edit: 'NavBar.jsx',
+    answerStarter: `// main.jsx · punto 1
+
+
+// NavBar.jsx · punto 2
+
+
+// NavBar.jsx · punto 3
+`,
+    expected: `- Sin sesión, la barra muestra el enlace **Entrar**.
+- Tras iniciar sesión en la pantalla de login, que ya usa \`signIn\`, la barra muestra **Salir** sin recargar la página.
+- Al pulsar **Salir**, vuelve a aparecer **Entrar**.
+- \`NavBar\` no recibe ninguna prop.`,
+    hints: [
+      'Repasar las tres piezas de Context: dónde se crea, qué componente guarda el valor y con qué hook se lee.',
+      'El Provider debe envolver a los componentes que leen el valor, y en el curso va dentro del router. En \`NavBar\`, el atajo que exporta \`AuthContext.jsx\` devuelve un objeto que se puede desestructurar.',
+    ],
+    solution: {
+      code: `// main.jsx · punto 1
+<BrowserRouter>
+  <AuthProvider>
+    <App />
+  </AuthProvider>
+</BrowserRouter>
+
+// NavBar.jsx · punto 2
+import { useAuth } from "./auth/AuthContext.jsx";
+
+// NavBar.jsx · punto 3
+const { isLoggedIn, signOut } = useAuth();`,
+      changes: ['\`AuthProvider\` envolviendo a \`App\`, dentro de \`BrowserRouter\`.', 'Import de \`useAuth\` en \`NavBar.jsx\`.', '\`const { isLoggedIn, signOut } = useAuth();\` en lugar de la constante fija.'],
+      explanation: `Context tiene tres piezas: \`createContext\` crea el Context, el **Provider** guarda el valor y \`useContext\` lo lee. Un componente solo puede leer el valor si está **dentro** del Provider; fuera recibiría el valor por defecto, \`null\`, y la desestructuración fallaría. El Provider va dentro de \`BrowserRouter\` para que sus componentes puedan usar la navegación, y envuelve a \`App\` para que lo lean el menú, el login y las rutas protegidas. Así \`NavBar\` obtiene la sesión directamente, sin que \`App\` y los componentes intermedios tengan que pasársela por props (*prop drilling*). Cuando \`signIn\` o \`signOut\` cambian el token, todos los componentes que leen el Context se vuelven a renderizar.`,
+      alternatives: 'Exportar \`AuthContext\` desde su fichero y leerlo con \`useContext(AuthContext)\` en lugar de \`useAuth\`. Leer el objeto completo (\`const auth = useAuth();\`) y usar \`auth.isLoggedIn\` y \`auth.signOut\`.',
+    },
+    rubric: [
+      { text: '\`AuthProvider\` envuelve a \`App\`', points: 3 },
+      { text: 'El Provider queda dentro de \`BrowserRouter\`', points: 1 },
+      { text: 'Importa \`useAuth\` desde \`AuthContext.jsx\`', points: 1 },
+      { text: 'Obtiene \`isLoggedIn\` y \`signOut\` con \`useAuth()\`', points: 3 },
+      { text: 'No pasa la sesión por props', points: 2 },
+    ],
+    penalties: ['Llamar a \`useAuth\` fuera de un componente o dentro de un \`if\`: no se conceden los 3 puntos de lectura, porque incumple las reglas de los hooks.', 'Crear un segundo \`AuthContext\` o un estado propio de sesión en \`NavBar\`: no se conceden los 2 puntos del último criterio.'],
+    partial: 'Si solo se obtiene `isLoggedIn` y falta `signOut`, se conceden 2 de los 3 puntos de lectura.',
+  },
 ];
 
 // Practical part of the fixed practice exams: one JavaScript, one React and one Express exercise,
 // 2 points each. The random practice exam draws one of each kind from all the exercises above.
-window.EXAM_PRACTICAL = { 1: ['A1', 'A4', 'A2'], 2: ['B1', 'B3', 'B2'], 3: ['A1', 'C2', 'A3'] };
+window.EXAM_PRACTICAL = { 1: ['A1', 'A4', 'A2'], 2: ['B1', 'B3', 'B2'], 3: ['A1', 'C3', 'A3'] };

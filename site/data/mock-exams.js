@@ -32,9 +32,9 @@ window.MOCK_EXAMS = [
       { id: 'state-mx407', type: 'mc', q: 'Un componente tiene `const [items, setItems] = useState([])`. ¿Por qué `items.push(x); setItems(items);` no vuelve a renderizar?',
         choices: ['Porque `push` no funciona con arrays de estado', 'Porque `setItems` solo acepta valores primitivos', 'Porque falta llamar a `useEffect`', 'Porque React compara por referencia y recibe el mismo array, así que considera que no hay cambio'], answer: 3,
         why: 'El estado se trata como inmutable: hay que pasar un array nuevo, por ejemplo `setItems([...items, x])`.' },
-      { id: 'state-mx408', type: 'mc', q: '¿Cuándo se ejecuta el efecto de `useEffect(() => { cargarDatos(); }, [])`?',
-        choices: ['Antes del primer renderizado', 'Una vez, después del primer renderizado', 'Después de cada renderizado', 'Solo cuando el usuario pulsa un botón'], answer: 1,
-        why: 'Con el array de dependencias vacío, el efecto se ejecuta una sola vez, tras montar el componente. Sin array, se ejecutaría tras cada renderizado.' },
+      { id: 'state-mx409', type: 'mc', q: '¿Qué problema resuelve la Context API de React?',
+        choices: ['Guardar los datos de la aplicación en el servidor', 'Hacer llegar un dato a componentes lejanos sin pasarlo por props a través de todos los intermedios (*prop drilling*)', 'Sustituir a `useState` en todos los componentes', 'Acelerar el renderizado de listas largas'], answer: 1,
+        why: 'Context coloca un dato en un Provider y cualquier componente de dentro lo lee con `useContext`. Evita el *prop drilling*: pasar un dato por componentes que no lo usan.' },
     ],
     practical: [
       {
@@ -205,9 +205,9 @@ module.exports = router;
       { id: 'state-mx507', type: 'mc', q: 'Con `const response = await api.get("/tasks")`, usando Axios, ¿dónde está la lista de tareas?',
         choices: ['En `response`', 'En `response.json()`', 'En `response.body`', 'En `response.data`'], answer: 3,
         why: 'Axios convierte el JSON automáticamente y lo deja en `response.data`. `response.json()` es propio de `fetch`, que no se usa en el curso.' },
-      { id: 'routing-mx508', type: 'mc', q: 'Con la ruta `<Route path="/tasks/:id" ... />` y la URL `/tasks/7`, ¿qué devuelve `useParams()` en el componente?',
-        choices: ['`{ id: 7 }`', '`{ id: "7" }`', '`7`', '`"/tasks/7"`'], answer: 1,
-        why: 'Los parámetros de la URL siempre llegan como texto. Para compararlos con un id numérico hay que convertirlos, por ejemplo con `Number(id)`.' },
+      { id: 'state-mx509', type: 'mc', q: 'El Context se creó con `createContext(null)`. ¿Qué recibe `useContext(AuthContext)` en un componente que está **fuera** de `AuthProvider`?',
+        choices: ['El valor del Provider, porque Context es global', '`null`, el valor por defecto, y la aplicación falla al leer sus propiedades', 'Un error de compilación de Vite', '`undefined` solo en el primer renderizado y después el valor correcto'], answer: 1,
+        why: 'Solo los componentes que están dentro del Provider reciben su valor. Fuera, `useContext` devuelve el valor por defecto de `createContext`, aquí `null`.' },
     ],
     practical: [
       {
@@ -390,9 +390,9 @@ module.exports = router;` }],
       { id: 'components-mx607', type: 'mc', q: '¿Qué ocurre con `<button onClick={handleDelete(task.id)}>Eliminar</button>`?',
         choices: ['La función se ejecuta solo al hacer clic', 'El botón queda deshabilitado', 'React muestra un error y no renderiza el botón', 'La función se ejecuta en cada renderizado, sin esperar al clic'], answer: 3,
         why: 'Entre llaves se evalúa la expresión, y `handleDelete(task.id)` es una llamada. Para esperar al clic hay que pasar una función: `onClick={() => handleDelete(task.id)}`.' },
-      { id: 'state-mx608', type: 'mc', q: 'En el patrón con los estados `data`, `loading` y `error`, ¿por qué se suele poner `setLoading(false)` en un bloque `finally`?',
-        choices: ['Porque `finally` se ejecuta antes que `try`', 'Porque `setLoading` no funciona dentro de `try`', 'Porque así se desactiva la carga tanto si la petición sale bien como si falla', 'Porque `finally` repite la petición si falla'], answer: 2,
-        why: '`finally` se ejecuta siempre. Si `setLoading(false)` solo estuviera en el `try`, un error dejaría la pantalla en «Cargando…» para siempre.' },
+      { id: 'state-mx609', type: 'mc', q: 'Dos componentes hermanos, `SearchInput` y `TaskList`, necesitan el mismo término de búsqueda. ¿Qué solución es la recomendada en el curso?',
+        choices: ['Que cada uno tenga su propio `useState` y sincronizarlos con `useEffect`', 'Guardar el término en una variable global de JavaScript', 'Subir el estado al padre común y pasar el valor y la función para cambiarlo por props', 'Guardar el término en `localStorage` y leerlo en cada renderizado'], answer: 2,
+        why: 'Es *lifting state*: el padre es la única fuente de verdad, pasa el dato a los hijos y les da una función para cambiarlo. Los datos bajan y los eventos suben.' },
     ],
     practical: [
       {

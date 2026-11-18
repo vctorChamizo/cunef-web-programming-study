@@ -42,7 +42,7 @@ disk and on GitHub Pages.
 - **Practice exams**: the three fixed ones plus a random one (3 + 3 + 2 questions from blocks I, II
   and III), question navigator, indicative timer, grade out of 4; when the data includes a practical
   part, self-assessed exercises with a rubric and an indicative grade out of 10.
-- **Practical exercises**: ten short exercises (fix, complete, connect, explain) with two progressive
+- **Practical exercises**: eleven short exercises (fix, complete, connect, explain) with two progressive
   hints, the reference solution on request and a rubric for self-assessment out of 10.
 - **Error review**: every failed question is kept until it is answered correctly anywhere.
 - **Search** (`Ctrl K`, `⌘ K` or `/`) across guide sections, questions, sessions, labs and docs.
