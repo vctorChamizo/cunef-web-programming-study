@@ -158,7 +158,7 @@ window.COURSE = {
   // General resources (Canvas module "Recursos").
   resources: [
     ['Laboratorios — Repositorio con enunciados y soluciones', 'https://github.com/vctorChamizo/cunef-web-programming-labs'],
-    ['Ejemplos de clase — Repositorio con el código de las sesiones', 'https://github.com/vctorChamizo/g247-labs-IACD-A-2026-27'],
+    ['Ejemplos de clase — Repositorio con el código de las sesiones', 'https://github.com/vctorChamizo/cunef-web-programming-class-examples-iacd-a-2026-27'],
     ['Git — Cheat sheet de comandos', 'https://education.github.com/git-cheat-sheet-education.pdf'],
   ],
 };
