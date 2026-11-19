@@ -210,7 +210,7 @@
   function render(html, title, { wide = false, keepScroll = false } = {}) {
     main.classList.toggle('wide', wide);
     main.innerHTML = html;
-    document.title = title ? `${title} · G247` : 'G247 · Sitio de estudio';
+    document.title = title ? `${title} · G247` : 'G247 · Programación de aplicaciones Web';
     if (!keepScroll) window.scrollTo(0, 0);
     main.focus({ preventScroll: true });
   }
