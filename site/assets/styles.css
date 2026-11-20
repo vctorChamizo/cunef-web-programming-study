@@ -313,6 +313,10 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .continue-card .t { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .continue-card .s { font-size: 0.85rem; color: var(--text-3); }
 
+/* ---------- Language switch ---------- */
+.lang-btn { height: 36px; min-width: 40px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: 700 0.78rem/1 inherit; letter-spacing: 0.06em; cursor: pointer; }
+.lang-btn:hover { border-color: var(--accent-line); color: var(--accent); }
+
 /* ---------- How it all fits together ---------- */
 .flow { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 0; }
 .flow-step { position: relative; display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; padding-bottom: 14px; }

@@ -56,6 +56,29 @@ disk and on GitHub Pages.
 Progress is stored only in the browser's `localStorage` (key `g247-study-v2`; best scores from the
 first version, `g247-progress`, are migrated).
 
+## English version
+
+The site is available in Spanish and English. `/en/...` opens the English version (shareable, it
+works with the clean URLs and `404.html`), and the ES/EN switch in the header changes language on
+the same page and remembers the choice in `localStorage`. `index.html` loads the data of the
+language from the URL before `app.js`:
+
+```text
+site/data/en/
+  course.js           English course map, architecture page and links
+  quizzes.js          quizzes 1-10: the coordinator's English originals (quizzes 1-3 from his
+                      Markdown, 4-10 from the English version of his site bank)
+  exercises.js        the 21 practical exercises
+  practice-bank.js    same structure, ids and practice exams as ../practice-bank.js
+site/assets/i18n-en.js  English interface: whole texts and rules for texts built with numbers
+```
+
+The English data is **canonical in this repository** and is not generated: any change to the
+Spanish quizzes, exercises, course map or practice bank must be carried over to `site/data/en/`
+by hand, keeping the same ids, answers and choice order. A new or changed interface text in
+`app.js` or `index.html` needs its entry in `i18n-en.js`. The theory guides are not translated:
+in English, the guide pages say they are available in Spanish and link to them.
+
 ## Where the content comes from
 
 `site/data/quizzes.js` and `site/data/guides.js` are **generated, never edited by hand**. They are

@@ -37,6 +37,7 @@
         <span class="search-trigger-label">Buscar en guías, preguntas y sesiones</span>
         <kbd class="search-kbd" id="search-kbd">Ctrl K</kbd>
       </button>
+      <button class="lang-btn" id="lang-btn" type="button">EN</button>
       <button class="icon-btn" id="theme-btn" type="button" aria-label="Cambiar entre tema claro y oscuro">
         <svg class="i theme-dark" aria-hidden="true"><use href="#i-moon"/></svg>
         <svg class="i theme-light" aria-hidden="true"><use href="#i-sun"/></svg>
@@ -110,11 +111,24 @@
     </defs>
   </svg>
 
-  <script src="data/course.js"></script>
-  <script src="data/quizzes.js"></script>
-  <script src="data/guides.js"></script>
-  <script src="data/exercises.js"></script>
-  <script src="data/practice-bank.js"></script>
+  <script>
+    // Language: /en/... (or the saved preference on the home page) loads the English data.
+    // The page is always served from the site root (404.html sends deep links there with ?p=).
+    (function () {
+      var l = location, base = /\.github\.io$/.test(l.hostname) ? '/' + l.pathname.split('/')[1] + '/' : '/';
+      var rest = l.pathname.indexOf(base) === 0 ? l.pathname.slice(base.length) : '';
+      var p = (new URLSearchParams(l.search).get('p') || '').replace(/^\//, '');
+      var path = rest || p, stored = null;
+      try { stored = localStorage.getItem('g247-lang'); } catch (e) {}
+      var en = /^en(\/|$)/.test(path) || (!path && stored === 'en');
+      window.LANG = en ? 'en' : 'es';
+      document.documentElement.lang = window.LANG;
+      var files = en
+        ? ['data/en/course.js', 'data/en/quizzes.js', 'data/guides.js', 'data/en/exercises.js', 'data/en/practice-bank.js', 'assets/i18n-en.js']
+        : ['data/course.js', 'data/quizzes.js', 'data/guides.js', 'data/exercises.js', 'data/practice-bank.js'];
+      for (var i = 0; i < files.length; i++) document.write('<script src="' + files[i] + '"><\/script>');
+    })();
+  </script>
   <script src="assets/app.js"></script>
 </body>
 </html>

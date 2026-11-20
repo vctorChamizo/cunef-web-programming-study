@@ -21,7 +21,39 @@
   // Clean URLs: the app lives at BASE (e.g. /cunef-web-programming-study/) and routes by path.
   // Links are written as "#/route" in the templates and turned into BASE + "route" when rendered.
   const BASE = new URL('..', document.currentScript.src).pathname;
-  const toPath = (href) => (href.startsWith('#/') ? BASE + href.slice(2) : href);
+  // Language: chosen by index.html from the URL (/en/...) or the saved preference.
+  const LANG = window.LANG === 'en' ? 'en' : 'es';
+  const PREFIX = LANG === 'en' ? 'en/' : '';
+  const LOCALE = LANG === 'en' ? 'en-GB' : 'es-ES';
+  const toPath = (href) => (href.startsWith('#/') ? BASE + PREFIX + href.slice(2) : href);
+  // English interface: whole texts first, then the rules for texts built with numbers (i18n-en.js).
+  const I18N = LANG === 'en' ? window.I18N_EN : null;
+  const RULES = I18N ? I18N.rules.map(([re, to]) => [new RegExp(re, 'g'), to]) : [];
+  function tr(text) {
+    if (!I18N || text == null) return text;
+    const t = String(text), core = t.trim();
+    if (!core) return t;
+    if (Object.prototype.hasOwnProperty.call(I18N.exact, core)) return t.replace(core, I18N.exact[core]);
+    let out = t;
+    for (const [re, to] of RULES) { re.lastIndex = 0; out = out.replace(re, to); }
+    if (out !== t) { const c2 = out.trim(); if (Object.prototype.hasOwnProperty.call(I18N.exact, c2)) out = out.replace(c2, I18N.exact[c2]); }
+    return out;
+  }
+  const SKIP_TR = 'code, pre, textarea, script, style, .prose, [data-no-tr]';
+  function translateTree(node) {
+    if (!I18N || !node) return;
+    if (node.nodeType === 3) { if (!node.parentElement?.closest(SKIP_TR)) { const v = tr(node.nodeValue); if (v !== node.nodeValue) node.nodeValue = v; } return; }
+    if (node.nodeType !== 1 || node.matches(SKIP_TR)) return;
+    for (const a of ['aria-label', 'title', 'placeholder']) if (node.hasAttribute(a)) node.setAttribute(a, tr(node.getAttribute(a)));
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+    let n;
+    while ((n = walker.nextNode())) {
+      if (n.nodeType === 1) {
+        if (n.matches(SKIP_TR)) { /* skip its subtree */ let next = n; while (next && !next.nextSibling && next !== node) next = next.parentNode; continue; }
+        for (const a of ['aria-label', 'title', 'placeholder']) if (n.hasAttribute(a)) n.setAttribute(a, tr(n.getAttribute(a)));
+      } else if (!n.parentElement?.closest(SKIP_TR)) { const v = tr(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v; }
+    }
+  }
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const main = $('#main');
@@ -64,13 +96,13 @@
   const codeFile = (f, open = true) => `<figure class="code-file"><figcaption><span>${esc(f.name)}</span><button class="copy-mini" type="button" data-copy>${icon('copy')}Copiar</button></figcaption><pre${open ? '' : ' hidden'}><code>${esc(f.code)}</code></pre></figure>`;
   const plain = (s) => String(s ?? '').replace(/```[a-z]*\n[\s\S]*?```/g, ' […] ').replace(/[`*]/g, '').replace(/\s+/g, ' ').trim();
   const fold = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-  const fmtNum = (n, d = 1) => n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmtNum = (n, d = 1) => n.toLocaleString(LOCALE, { minimumFractionDigits: d, maximumFractionDigits: d });
   const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
-  const fmtPts = (n) => n.toLocaleString('es-ES', { maximumFractionDigits: 2 });
+  const fmtPts = (n) => n.toLocaleString(LOCALE, { maximumFractionDigits: 2 });
   // "sesiones 10-11", "sesión 37"; a non-numeric value ("repaso transversal") is shown as is.
   const sessLabel = (v) => { const t = String(v ?? ''); return /^\d/.test(t) ? `${/[-,]/.test(t) ? 'sesiones' : 'sesión'} ${t}` : t; };
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-  const fmtShort = (ts) => new Date(ts).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+  const fmtShort = (ts) => new Date(ts).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' });
   const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
   const isObjective = (q) => q.type !== 'essay';
   const objective = (qs) => qs.filter(isObjective).length;
@@ -138,7 +170,17 @@
     else if (ok === false) S.wrong[id] = Date.now();
     save();
   }
-  const setLast = (href, title, sub) => { S.last = { href, title, sub, at: Date.now() }; save(); };
+  const setLast = (href, title, sub) => { S.last = { href, title, sub, lang: LANG, at: Date.now() }; save(); };
+  // "Continue where you left off" saved in the other language: rebuild its label from the data.
+  function lastInLang(last) {
+    if (!last || (last.lang || 'es') === LANG) return last;
+    const [, page, arg] = last.href.replace(/^#\/?/, '').split('/').concat('', '');
+    if (page === 'quiz' && Q[arg]) return { ...last, title: `${quizName(arg)} · ${Q[arg].title}`, sub: '' };
+    if (page === 'ejercicio' && XB[arg]) return { ...last, title: `Ejercicio ${arg} · ${XB[arg].title}`, sub: '' };
+    if (page === 'simulacro') return { ...last, title: arg === 'aleatorio' ? 'Simulacro aleatorio' : `Simulacro ${arg}`, sub: '' };
+    if (page === 'guia') return { ...last, title: `Guía del bloque ${arg}`, sub: '' };
+    return { ...last, title: tr('Continuar'), sub: '' };
+  }
   const wrongIds = () => Object.keys(S.wrong).filter((id) => QI[id]);
 
   // ---------- Shell: sidebar, theme, toast, mobile menu ----------
@@ -194,7 +236,7 @@
     document.body.classList.toggle('nav-open', open);
     backdrop.hidden = !open;
     menuBtn.setAttribute('aria-expanded', String(open));
-    menuBtn.setAttribute('aria-label', open ? 'Cerrar el menú' : 'Abrir el menú');
+    menuBtn.setAttribute('aria-label', tr(open ? 'Cerrar el menú' : 'Abrir el menú'));
     if (open) $('#sidebar .nav-link')?.focus();
   }
   menuBtn.addEventListener('click', () => setNav(!document.body.classList.contains('nav-open')));
@@ -213,7 +255,7 @@
   function render(html, title, { wide = false, keepScroll = false } = {}) {
     main.classList.toggle('wide', wide);
     main.innerHTML = html;
-    document.title = title ? `${title} · G247` : 'G247 · Programación de aplicaciones Web';
+    document.title = title ? `${tr(title)} · G247` : `G247 · ${tr('Programación de aplicaciones Web')}`;
     if (!keepScroll) window.scrollTo(0, 0);
     main.focus({ preventScroll: true });
   }
@@ -301,7 +343,7 @@
     const exams = Object.values(S.exam).filter((e) => e.attempts);
     const bestExam = exams.length ? Math.max(...exams.map((e) => e.best)) : null;
     const wrong = wrongIds().length;
-    const last = S.last;
+    const last = lastInLang(S.last);
 
     const cont = last
       ? `<a class="card continue-card" href="${esc(last.href)}"><span class="icon-tile">${icon(last.href.includes('/guia/') ? 'book' : 'play')}</span>
@@ -466,6 +508,13 @@
   function guidePage(id, anchor) {
     const g = G[id];
     if (!g) return notFound();
+    if (LANG === 'en') {
+      const bb = BLOCKS.find((x) => x.guide === id);
+      return render(`${pageHead({ path: [[`Bloque ${bb.roman}`, `#/bloque/${bb.id}`], ['Guía teórica', '']], eyebrow: `Bloque ${bb.roman}`, title: `Guía teórica del bloque ${bb.roman}`,
+        lead: 'The theory guides of the course are available in Spanish only. The quizzes, exercises and practice exams of this block are available in English.' })}
+        <div class="card"><p style="margin-top:0">${esc(bb.title)}: ${esc(bb.subtitle)}.</p>
+        <div class="card-foot"><a class="btn" href="${BASE}guia/${id}" data-lang="es">${icon('book')}Open the guide in Spanish</a>${bb.quizzes.filter((n) => Q[n]).slice(0, 1).map((n) => `<a class="btn secondary" href="#/quiz/${n}">${esc(quizName(n))}</a>`).join('')}</div></div>`, `Guía del bloque ${bb.roman}`);
+    }
     const b = BLOCKS.find((x) => x.guide === id);
     const words = g.html.replace(/<[^>]+>/g, ' ').split(/\s+/).length;
     const tocHtml = g.toc.map((t) => `<a class="l${t.level}" href="#/guia/${id}/${encodeURIComponent(t.id)}" data-id="${esc(t.id)}">${esc(t.text)}</a>`).join('');
@@ -816,7 +865,7 @@
         <div class="list-card">${ids.map((x) => { const e = QI[x]; return `<div class="lab-row"><span class="lab-id" style="font-size:.72rem">${e.quiz ? esc(quizShort(e.quiz)) : 'S' + e.exam}</span><div class="lab-main"><div class="t" style="font-weight:500">${inline(plain(e.q.q).slice(0, 180))}${plain(e.q.q).length > 180 ? '…' : ''}</div><div class="s">${e.quiz ? `${esc(quizName(e.quiz))} · ${esc(Q[e.quiz].title)}` : `Simulacro ${e.exam}`} · fallada el ${fmtShort(S.wrong[x])}</div></div></div>`; }).join('')}</div>`
       : `<div class="card empty"><span class="icon-tile">${icon('check')}</span><h3>No hay preguntas pendientes</h3><p>Las preguntas falladas en quizzes y simulacros aparecerán aquí para repasarlas.</p><div class="actions" style="justify-content:center"><a class="btn" href="#/quizzes">Ir a los quizzes</a></div></div>`}`, 'Repaso de errores');
     if ($('#clear-wrong')) on($('#clear-wrong'), 'click', () => {
-      if (!confirm('¿Vaciar la lista de preguntas pendientes de repaso?')) return;
+      if (!confirm(tr('¿Vaciar la lista de preguntas pendientes de repaso?'))) return;
       S.wrong = {}; save(true); renderNav('repaso'); reviewPage();
     });
   }
@@ -1121,7 +1170,7 @@
       st.code = ta.value; save();
     });
     on(ta, 'keyup', (ev) => { if (ev.key === 'Escape') ta.dataset.esc = '1'; });
-    on($('#ex-reset'), 'click', () => { if (!confirm('¿Sustituir la solución propia por el código inicial?')) return; ta.value = startCode; delete st.code; save(); });
+    on($('#ex-reset'), 'click', () => { if (!confirm(tr('¿Sustituir la solución propia por el código inicial?'))) return; ta.value = startCode; delete st.code; save(); });
     on($('#hint-btn'), 'click', () => {
       st.hints = Math.min(x.hints.length, (st.hints || 0) + 1); save();
       $$('.hint-box').forEach((h) => { h.hidden = Number(h.dataset.h) >= st.hints; });
@@ -1210,7 +1259,7 @@
         <button class="btn danger" id="reset" type="button">${icon('trash')}Borrar todo el progreso</button>
       </div>`, 'Progreso');
     on($('#reset'), 'click', () => {
-      if (!confirm('¿Borrar todo el progreso guardado en este navegador? No se puede deshacer.')) return;
+      if (!confirm(tr('¿Borrar todo el progreso guardado en este navegador? No se puede deshacer.'))) return;
       for (const k of ['quiz', 'exam', 'wrong', 'current', 'ex']) S[k] = {};
       delete S.last; delete S.guide; save(true);
       try { localStorage.removeItem('g247-progress'); } catch { /* ignore */ }
@@ -1231,7 +1280,7 @@
       ['Quizzes por laboratorio', '#/quizzes', 'quiz autoevaluacion'], ['Repaso de errores', '#/repaso', 'falladas errores repasar'],
       ['Laboratorios y recursos', '#/recursos', 'laboratorio enunciado solucion documentacion mdn'], ['Progreso', '#/progreso', 'resultados borrar progreso estadisticas']]
       .forEach(([t, h, k]) => add({ type: 'page', title: t, sub: 'Página', href: h, text: k, ic: 'chevron' }));
-    for (const gid of Object.keys(G)) {
+    for (const gid of LANG === 'en' ? [] : Object.keys(G)) {
       const div = document.createElement('div');
       div.innerHTML = G[gid].html;
       let cur = null;
@@ -1384,12 +1433,28 @@
     list.concat($$('a[href^="#/"]', rootEl)).forEach((a) => a.setAttribute('href', toPath(a.getAttribute('href'))));
   }
   fixLinks(document.body);
-  new MutationObserver((muts) => muts.forEach((m) => m.addedNodes.forEach(fixLinks))).observe(document.body, { childList: true, subtree: true });
+  new MutationObserver((muts) => muts.forEach((m) => m.addedNodes.forEach((n) => { fixLinks(n); translateTree(n); }))).observe(document.body, { childList: true, subtree: true });
+  translateTree(document.body);
+  // Language switch: ES <-> EN on the same page, remembered in this browser.
+  const langBtn = $('#lang-btn');
+  if (langBtn) {
+    const other = LANG === 'en' ? 'es' : 'en';
+    langBtn.textContent = other.toUpperCase();
+    langBtn.setAttribute('aria-label', other === 'en' ? 'Read in English' : 'Leer en castellano');
+    langBtn.setAttribute('title', other === 'en' ? 'English' : 'Castellano');
+    langBtn.setAttribute('data-no-tr', '');
+    langBtn.addEventListener('click', () => {
+      try { localStorage.setItem('g247-lang', other); } catch { /* storage unavailable */ }
+      let raw = location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : '';
+      if (/^en(\/|$)/.test(raw)) raw = raw.slice(3);
+      location.assign(BASE + (other === 'en' ? 'en/' : '') + raw + location.hash);
+    });
+  }
   // Internal links navigate without reloading; "#id" links scroll within the page.
   document.addEventListener('click', (e) => {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     const a = e.target.closest('a[href]');
-    if (!a || a.target || a.hasAttribute('download')) return;
+    if (!a || a.target || a.hasAttribute('download') || a.hasAttribute('data-lang')) return;
     const href = a.getAttribute('href');
     if (href.startsWith('#') && !href.startsWith('#/')) {
       const el = document.getElementById(decodeURIComponent(href.slice(1)));
@@ -1402,7 +1467,8 @@
     navigate(url.pathname + url.search);
   });
   function route() {
-    const raw = location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : '';
+    let raw = location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : '';
+    if (/^en(\/|$)/.test(raw)) raw = raw.slice(3);
     const parts = raw.split('/').filter(Boolean);
     const [page, arg, a3] = parts;
     // Same guide, new section: scroll without re-rendering.
@@ -1425,7 +1491,7 @@
     };
     currentKey = keyFor();
     renderNav(currentKey);
-    if (page === 'examen') history.replaceState(null, '', BASE);
+    if (page === 'examen') history.replaceState(null, '', BASE + PREFIX);
     if (!page || page === 'examen') return home();
     switch (page) {
       case 'bloque': return blockPage(arg);
@@ -1451,6 +1517,9 @@
     const params = new URLSearchParams(location.search);
     if (location.hash.startsWith('#/')) history.replaceState(null, '', toPath(location.hash));
     else if (params.has('p')) history.replaceState(null, '', BASE + params.get('p').replace(/^\//, '') + location.hash);
+    const cur = location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : '';
+    if (LANG === 'en' && !/^en(\/|$)/.test(cur)) history.replaceState(null, '', BASE + 'en/' + cur + location.hash);
+    if (LANG === 'en') { try { localStorage.setItem('g247-lang', 'en'); } catch { /* storage unavailable */ } }
   }
   window.addEventListener('pagehide', () => save(true));
   route();

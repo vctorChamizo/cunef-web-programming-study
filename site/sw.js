@@ -1,8 +1,8 @@
 'use strict';
 // Offline support for the study site. Network first, so students always get the latest version
 // when online; the cached copy is only used when the network fails.
-const CACHE = 'g247-study-v9';
-const SHELL = ['./', 'index.html', 'assets/styles.css', 'assets/app.js', 'assets/icon.svg', 'data/course.js', 'data/quizzes.js', 'data/guides.js', 'data/exercises.js', 'data/practice-bank.js'];
+const CACHE = 'g247-study-v10';
+const SHELL = ['./', 'index.html', 'assets/styles.css', 'assets/app.js', 'assets/icon.svg', 'data/course.js', 'data/quizzes.js', 'data/guides.js', 'data/exercises.js', 'data/practice-bank.js', 'data/en/course.js', 'data/en/quizzes.js', 'data/en/exercises.js', 'data/en/practice-bank.js', 'assets/i18n-en.js'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
