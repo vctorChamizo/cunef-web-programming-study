@@ -142,12 +142,15 @@ form.addEventListener("submit", (event) => {
   // ------------------------------------------------------------------ A2
   {
     id: 'A2', kind: 'express', category: 'Corrección de errores', tech: 'Express y PostgreSQL',
+    conceptual: true,
     title: 'Tarea inexistente con código 200',
     concepts: ['códigos de estado HTTP', '404', 'return en un controlador'],
     level: 'Básica', minutes: '8',
     statement: `Una API de tareas tiene el endpoint \`GET /tasks/:id\`. Cuando la tarea existe funciona bien, pero cuando no existe responde \`200\` con el cuerpo \`null\`. Un cliente no puede distinguir así entre «la tarea existe» y «no existe».
 
-Se pide corregir el endpoint para que, si la tarea no existe, responda \`404\` con el cuerpo \`{ "error": "Task not found" }\`. El modelo es correcto y no debe cambiarse.`,
+Se pide corregir el endpoint para que, si la tarea no existe, responda \`404\` con el cuerpo \`{ "error": "Task not found" }\`. El modelo es correcto y no debe cambiarse.
+
+**Parte conceptual.** Justificar por qué la comprobación del \`404\` se escribe en la ruta (el controlador) y no en el modelo \`findById\`. Se responde en 2-3 líneas, como comentario al final del fichero.`,
     files: [
       { name: 'models/tasksModel.js', lang: 'js', code: `const db = require("../db");
 
@@ -171,7 +174,10 @@ router.get("/:id", async (req, res) => {
   res.status(200).json(task);
 });
 
-module.exports = router;` },
+module.exports = router;
+
+// Parte conceptual (2-3 líneas):
+// ` },
     ],
     edit: 'routes/tasks.js',
     expected: `| Petición | Respuesta |
@@ -192,16 +198,21 @@ module.exports = router;` },
   }
 
   res.json(task);
-});`,
-      changes: ['Un \`if (!task)\` que responde \`404\` con el mensaje de error.', '\`return\` en esa respuesta, para que no se ejecute también la respuesta 200.'],
+});
+
+// Parte conceptual: el modelo solo habla con PostgreSQL y devuelve datos (una fila o null);
+// no conoce req ni res. Decidir qué respuesta HTTP corresponde, como el 404, es trabajo
+// del controlador, que es la capa que traduce los datos a códigos de estado.`,
+      changes: ['Un \`if (!task)\` que responde \`404\` con el mensaje de error.', '\`return\` en esa respuesta, para que no se ejecute también la respuesta 200.', 'Parte conceptual: respuesta en un comentario al final del fichero.'],
       explanation: `El modelo devuelve \`null\` cuando no hay fila, y \`null\` es un JSON válido: por eso Express respondía 200. El controlador es quien traduce «no hay resultado» a un código HTTP. El \`return\` es necesario porque, sin él, la ejecución continúa y Express intenta enviar una segunda respuesta, lo que provoca el error *Cannot set headers after they are sent*.`,
       alternatives: 'Usar \`if (task === null)\`. Escribir la respuesta correcta en un \`else\` en lugar de usar \`return\`. Mantener \`res.status(200).json(task)\` en el caso correcto: 200 es el código por defecto, pero indicarlo no es un error.',
     },
     rubric: [
-      { text: 'Comprueba si \`task\` es \`null\` antes de responder', points: 3 },
+      { text: 'Comprueba si \`task\` es \`null\` antes de responder', points: 2 },
       { text: 'Responde \`404\` con \`{ error: "Task not found" }\`', points: 3 },
-      { text: 'Evita la doble respuesta con \`return\` o con \`else\`', points: 2 },
-      { text: 'Mantiene la respuesta \`200\` con la tarea cuando existe', points: 2 },
+      { text: 'Evita la doble respuesta con \`return\` o con \`else\`', points: 1.5 },
+      { text: 'Mantiene la respuesta \`200\` con la tarea cuando existe', points: 1.5 },
+      { text: 'Parte conceptual: el modelo devuelve datos y el controlador decide el código HTTP', points: 2 },
     ],
     penalties: ['Modificar el modelo para que lance un error o responda él mismo: -2, porque el modelo no conoce \`res\`.', 'Usar 400 o 500 en lugar de 404: no se conceden los 3 puntos del código.'],
     partial: 'Si se responde 404 pero sin el cuerpo indicado, se conceden 2 de los 3 puntos del código.',
@@ -210,12 +221,15 @@ module.exports = router;` },
   // ------------------------------------------------------------------ A3
   {
     id: 'A3', kind: 'express', category: 'Corrección de errores', tech: 'Express y PostgreSQL',
+    conceptual: true,
     title: 'La tarea creada llega vacía',
     concepts: ['async/await', 'promesas', 'modelo y controlador'],
     level: 'Intermedia-baja', minutes: '10',
     statement: `En una API de tareas, \`POST /tasks\` inserta la tarea en PostgreSQL y debe devolver la fila creada. La tarea se guarda bien en la base de datos, pero el cliente recibe \`201\` con el cuerpo \`{}\` en lugar de la tarea.
 
-Se pide corregir el controlador para que responda con la tarea creada y explicar en un comentario por qué llegaba \`{}\`. El modelo es correcto.`,
+Se pide corregir el controlador para que responda con la tarea creada y explicar en un comentario por qué llegaba \`{}\`. El modelo es correcto.
+
+**Parte conceptual.** Describir el recorrido de \`POST /tasks\` desde que el cliente envía la petición hasta que recibe la respuesta, nombrando las capas por las que pasa. Se responde en 2-3 líneas, como comentario al final del fichero.`,
     files: [
       { name: 'models/tasksModel.js', lang: 'js', code: `const db = require("../db");
 
@@ -236,7 +250,10 @@ async function createTask(req, res) {
   res.status(201).json(task);
 }
 
-module.exports = { createTask };` },
+module.exports = { createTask };
+
+// Parte conceptual (2-3 líneas):
+// ` },
     ],
     edit: 'controllers/tasksController.js',
     expected: `\`POST /tasks\` con el cuerpo \`{ "title": "Repasar JWT" }\` responde \`201\` con \`{ "id": 7, "title": "Repasar JWT", "done": false }\`.`,
@@ -250,16 +267,21 @@ module.exports = { createTask };` },
   // Sin await, task era una promesa pendiente, y una promesa se convierte en {} al pasarla a JSON
   const task = await tasksModel.create(title);
   res.status(201).json(task);
-}`,
-      changes: ['Añadir \`await\` delante de \`tasksModel.create(title)\`.'],
+}
+
+// Parte conceptual: el cliente envía POST /tasks con Axios → express.json() analiza el
+// cuerpo → la ruta llama al controlador → el controlador llama al modelo → el modelo ejecuta
+// el INSERT con pg en PostgreSQL → la fila vuelve al controlador, que responde 201 con ella.`,
+      changes: ['Añadir \`await\` delante de \`tasksModel.create(title)\`.', 'Parte conceptual: respuesta en un comentario al final del fichero.'],
       explanation: `\`create\` es una función \`async\`: al llamarla devuelve inmediatamente una **promesa**, no la fila. Sin \`await\`, el controlador envía esa promesa, que al convertirse a JSON queda como \`{}\`. La inserción sí se ejecuta, por eso la tarea aparece en la base de datos. Con \`await\`, el controlador espera a que la consulta termine y recibe la fila que devuelve \`RETURNING\`. \`createTask\` ya es \`async\`, así que puede usar \`await\`.`,
       alternatives: 'No hay una alternativa razonable dentro de las convenciones del curso, que trabaja las promesas con \`async/await\`.',
     },
     rubric: [
-      { text: 'Identifica que \`create\` devuelve una promesa', points: 3 },
-      { text: 'Añade \`await\` en la llamada al modelo', points: 4 },
+      { text: 'Identifica que \`create\` devuelve una promesa', points: 2 },
+      { text: 'Añade \`await\` en la llamada al modelo', points: 3 },
       { text: 'Mantiene la respuesta \`201\` con la tarea', points: 1 },
       { text: 'El comentario explica por qué llegaba \`{}\`', points: 2 },
+      { text: 'Parte conceptual: recorrido completo con las capas en orden', points: 2 },
     ],
     penalties: ['Quitar \`async\` del modelo o reescribirlo: -2.', 'Cambiar el código a 200: -1.'],
     partial: 'Si la explicación menciona la asincronía pero no la relaciona con la promesa enviada como JSON, se concede 1 de los 2 puntos.',
@@ -268,6 +290,7 @@ module.exports = { createTask };` },
   // ------------------------------------------------------------------ B2
   {
     id: 'B2', kind: 'express', category: 'Completar código', tech: 'Express y JWT',
+    conceptual: true,
     title: 'Middleware de autenticación',
     concepts: ['middleware', 'cabecera Authorization', 'jwt.verify', '401'],
     level: 'Intermedia-baja', minutes: '10-12',
@@ -277,7 +300,9 @@ Se pide completar los tres puntos marcados:
 
 1. Si no hay cabecera o no empieza por \`Bearer \`, responder \`401\` con \`{ "error": "Missing token" }\`.
 2. Verificar el token con \`process.env.JWT_SECRET\` y guardar su contenido en \`req.user\`.
-3. Si el token no es válido o ha caducado, responder \`401\` con \`{ "error": "Invalid or expired token" }\`.`,
+3. Si el token no es válido o ha caducado, responder \`401\` con \`{ "error": "Invalid or expired token" }\`.
+
+**Parte conceptual.** Justificar en qué posición de la cadena se registra \`auth\` respecto a \`express.json()\`, la validación del cuerpo y el controlador, y por qué. Se responde en 2-3 líneas, como comentario al final del fichero.`,
     files: [{ name: 'middleware/auth.js', lang: 'js', code: `const jwt = require("jsonwebtoken");
 
 function auth(req, res, next) {
@@ -298,7 +323,10 @@ function auth(req, res, next) {
 
 module.exports = auth;
 
-// Uso: router.get("/", auth, tasksController.list);` }],
+// Uso: router.get("/", auth, tasksController.list);
+
+// Parte conceptual (2-3 líneas):
+// ` }],
     expected: `| Petición | Resultado |
 |---|---|
 | Sin cabecera \`Authorization\` | \`401\` con \`{ "error": "Missing token" }\` |
@@ -324,16 +352,21 @@ module.exports = auth;
   } catch (error) {
     return res.status(401).json({ error: "Invalid or expired token" });
   }
-}`,
-      changes: ['Comprobación de la cabecera con \`return\` y 401.', '\`req.user = jwt.verify(token, process.env.JWT_SECRET)\` dentro del \`try\`.', 'Respuesta 401 en el \`catch\`.'],
+}
+
+// Parte conceptual: después de cors y express.json(), y antes de la validación y del
+// controlador: router.post("/", auth, validate, controller.create). Si falta el token se
+// responde 401 sin validar ni tocar la base de datos, y el controlador ya recibe req.user.`,
+      changes: ['Comprobación de la cabecera con \`return\` y 401.', '\`req.user = jwt.verify(token, process.env.JWT_SECRET)\` dentro del \`try\`.', 'Respuesta 401 en el \`catch\`.', 'Parte conceptual: respuesta en un comentario al final del fichero.'],
       explanation: `\`jwt.verify\` comprueba la firma con el secreto y la fecha de caducidad. Si todo es correcto, devuelve el contenido del token (el *payload*); si no, **lanza un error**, por eso va dentro de \`try/catch\`. Guardar el payload en \`req.user\` permite que los controladores sepan quién hace la petición sin fiarse de datos que envíe el cliente. Las dos respuestas son 401 porque el problema es la identidad: el 403 se reserva para un usuario identificado que no tiene permiso.`,
       alternatives: '\`if (!header?.startsWith("Bearer "))\`. Extraer el token con \`header.split(" ")[1]\`. No usar \`return\` en el \`catch\` es aceptable, porque es la última instrucción del middleware.',
     },
     rubric: [
-      { text: 'Comprueba la cabecera y el prefijo, y responde 401 con \`return\`', points: 3 },
-      { text: 'Verifica con \`jwt.verify\` y el secreto de \`process.env\`', points: 3 },
-      { text: 'Guarda el resultado en \`req.user\` antes de \`next()\`', points: 2 },
-      { text: 'Responde 401 con el mensaje indicado en el \`catch\`', points: 2 },
+      { text: 'Comprueba la cabecera y el prefijo, y responde 401 con \`return\`', points: 2.5 },
+      { text: 'Verifica con \`jwt.verify\` y el secreto de \`process.env\`', points: 2.5 },
+      { text: 'Guarda el resultado en \`req.user\` antes de \`next()\`', points: 1.5 },
+      { text: 'Responde 401 con el mensaje indicado en el \`catch\`', points: 1.5 },
+      { text: 'Parte conceptual: posición en la cadena (tras \`express.json\`, antes de validación y controlador) y motivo', points: 2 },
     ],
     penalties: ['Usar \`jwt.decode\` en lugar de \`jwt.verify\`: no se conceden los 3 puntos de verificación, porque \`decode\` no comprueba la firma.', 'Responder 403 en lugar de 401: -1 por cada caso.', 'Escribir el secreto en el código: -1.'],
     partial: 'Si falta el \`return\` del punto 1, se conceden 2 de sus 3 puntos.',
@@ -944,11 +977,13 @@ setProducts(response.data);
     partial: 'Si la explicación menciona el renderizado pero no el papel de `setProducts`, se conceden los 3 puntos del segundo criterio.',
   },
   {
-    id: 'A7', kind: 'express', category: 'Corrección de errores', tech: 'Express y PostgreSQL', title: 'Consulta vulnerable',
+    id: 'A7', conceptual: true, kind: 'express', category: 'Corrección de errores', tech: 'Express y PostgreSQL', title: 'Consulta vulnerable',
     concepts: ['inyección SQL', 'consultas parametrizadas', 'req.query'], level: 'Intermedia-baja', minutes: '8-10',
     statement: `El endpoint \`GET /users?email=...\` busca un usuario por email. Funciona con emails normales, pero una auditoría ha detectado que es vulnerable a **inyección SQL**: con \`?email=' OR '1'='1\` devuelve el primer usuario de la tabla.
 
-Se pide corregir la consulta sin cambiar el comportamiento normal del endpoint.`,
+Se pide corregir la consulta sin cambiar el comportamiento normal del endpoint.
+
+**Parte conceptual.** Describir el recorrido del email desde que el usuario lo escribe en un formulario de React hasta que la consulta llega a PostgreSQL, e indicar en qué punto del servidor se debería validar. Se responde en 2-3 líneas, como comentario al final del fichero.`,
     files: [{ name: 'routes/users.js', lang: 'js', code: `const express = require("express");
 const { Pool } = require("pg");
 
@@ -963,7 +998,10 @@ router.get("/", async (req, res) => {
   res.json(rows[0] ?? null);
 });
 
-module.exports = router;` }],
+module.exports = router;
+
+// Parte conceptual (2-3 líneas):
+// ` }],
     expected: '`GET /users?email=ana@cunef.edu` devuelve ese usuario. `GET /users?email=\' OR \'1\'=\'1` devuelve `null`, porque ningún usuario tiene ese texto como email.',
     hints: ['Repasar cómo se pasan valores a `pool.query` en los laboratorios 6 y 7.', 'El texto SQL no debe contener ningún dato que venga de la petición: el valor va en un segundo argumento.'],
     solution: {
@@ -974,15 +1012,20 @@ module.exports = router;` }],
 [email]
   );
   res.json(rows[0] ?? null);
-});`,
-      changes: ['Sustituir la plantilla con \`\${email}\` por el marcador \`$1\`.', 'Pasar \`[email]\` como segundo argumento de \`pool.query\`.'],
+});
+
+// Parte conceptual: input controlado → estado de React → Axios (GET /users?email=...) →
+// ruta de Express → validación del email (middleware, antes del controlador) → consulta
+// parametrizada con pg → PostgreSQL. La respuesta vuelve en orden inverso hasta el estado.`,
+      changes: ['Sustituir la plantilla con \`\${email}\` por el marcador \`$1\`.', 'Pasar \`[email]\` como segundo argumento de \`pool.query\`.', 'Parte conceptual: respuesta en un comentario al final del fichero.'],
       explanation: `Al interpolar el email en el texto, las comillas que envía el atacante cierran la cadena SQL y añaden una condición siempre verdadera: \`WHERE email = '' OR '1'='1'\`. Con \`$1\`, \`pg\` envía el valor aparte y PostgreSQL lo trata siempre como un dato, nunca como parte de la consulta.`,
       alternatives: 'No hay alternativa aceptable: escapar las comillas a mano no se considera una corrección segura.',
     },
     rubric: [
-      { text: 'Usa el marcador \`$1\` en el texto SQL', points: 4 },
-      { text: 'Pasa el valor en el array de parámetros', points: 4 },
+      { text: 'Usa el marcador \`$1\` en el texto SQL', points: 3 },
+      { text: 'Pasa el valor en el array de parámetros', points: 3 },
       { text: 'Mantiene el comportamiento normal (\`rows[0] ?? null\`)', points: 2 },
+      { text: 'Parte conceptual: recorrido completo y validación en el servidor antes del controlador', points: 2 },
     ],
     penalties: ['Intentar filtrar o escapar comillas a mano en lugar de parametrizar: no se conceden los 8 primeros puntos.'],
     partial: 'Si se usa `$1` pero falta el array de parámetros, se conceden los 4 puntos del marcador.',
@@ -1080,14 +1123,16 @@ export default Counter;` }],
     partial: 'Si el botón -1 resta pero permite negativos, se conceden 2 de sus 4 puntos.',
   },
   {
-    id: 'B6', kind: 'express', category: 'Completar código', tech: 'Express y PostgreSQL', title: 'Borrar un producto',
+    id: 'B6', conceptual: true, kind: 'express', category: 'Completar código', tech: 'Express y PostgreSQL', title: 'Borrar un producto',
     concepts: ['DELETE', 'rowCount', '204 y 404', 'consulta parametrizada'], level: 'Intermedia-baja', minutes: '10',
     statement: `Se pide completar el endpoint \`DELETE /products/:id\` para que borre el producto de la tabla \`products\`:
 
 - Si existía, responder \`204\` sin cuerpo.
 - Si no existía, responder \`404\` con \`{ "error": "Product not found" }\`.
 
-No hace falta gestionar errores de la base de datos.`,
+No hace falta gestionar errores de la base de datos.
+
+**Parte conceptual.** El endpoint debe quedar protegido con el middleware \`requireAuth\`. Indicar dónde se añade en la definición de la ruta y qué responde la API si llega una petición sin token. Se responde en 2-3 líneas, como comentario al final del fichero.`,
     files: [{ name: 'routes/products.js', lang: 'js', code: `const express = require("express");
 const { Pool } = require("pg");
 
@@ -1101,7 +1146,10 @@ router.delete("/:id", async (req, res) => {
 module.exports = router;
 
 // Nota: el resultado de pool.query incluye rowCount,
-// el número de filas afectadas por la consulta.` }],
+// el número de filas afectadas por la consulta.
+
+// Parte conceptual (2-3 líneas):
+// ` }],
     expected: '`DELETE /products/3` (existe) responde `204`. Repetir la misma petición responde `404` con `{ "error": "Product not found" }`.',
     hints: ['Repasar qué códigos se usan para «borrado sin contenido que devolver» y para «no existe».', '`rowCount` indica cuántas filas ha borrado el `DELETE`: si es 0, el producto no existía.'],
     solution: {
@@ -1113,16 +1161,21 @@ return res.status(404).json({ error: "Product not found" });
   }
 
   res.status(204).end();
-});`,
-      changes: ['\`DELETE\` parametrizado con \`$1\`.', 'Comprobación de \`rowCount\` con respuesta 404.', 'Respuesta 204 con \`end()\`.'],
+});
+
+// Parte conceptual: router.delete("/:id", requireAuth, async (req, res) => { ... }).
+// Va antes del manejador: sin token responde 401 y la consulta DELETE no llega a
+// ejecutarse, porque requireAuth no llama a next().`,
+      changes: ['\`DELETE\` parametrizado con \`$1\`.', 'Comprobación de \`rowCount\` con respuesta 404.', 'Respuesta 204 con \`end()\`.', 'Parte conceptual: respuesta en un comentario al final del fichero.'],
       explanation: 'Un `DELETE` que no encuentra filas no es un error para PostgreSQL: simplemente afecta a 0 filas. `rowCount` permite distinguir los dos casos sin una consulta previa. 204 indica éxito sin cuerpo, por eso se usa `end()` y no `json()`.',
       alternatives: 'Añadir `RETURNING id` y comprobar `result.rows.length`. Hacer antes un `SELECT` para comprobar que existe, aunque son dos consultas. `res.sendStatus(204)`.',
     },
     rubric: [
-      { text: 'Consulta \`DELETE\` parametrizada', points: 3 },
+      { text: 'Consulta \`DELETE\` parametrizada', points: 2.5 },
       { text: 'Usa \`await\` con la consulta', points: 1 },
-      { text: 'Detecta que no existía (\`rowCount\` o equivalente) y responde 404', points: 3 },
-      { text: 'Responde 204 sin cuerpo cuando se borra', points: 3 },
+      { text: 'Detecta que no existía (\`rowCount\` o equivalente) y responde 404', points: 2.5 },
+      { text: 'Responde 204 sin cuerpo cuando se borra', points: 2 },
+      { text: 'Parte conceptual: \`requireAuth\` antes del manejador y respuesta 401 sin ejecutar el borrado', points: 2 },
     ],
     penalties: ['Concatenar el \`id\` en el texto SQL: no se conceden los 3 puntos de la consulta.', 'Responder 200 con un mensaje en lugar de 204: -1.'],
     partial: 'Si siempre responde 204, sin distinguir el caso inexistente, se conceden los puntos de la consulta, el `await` y el 204.',
@@ -1184,14 +1237,16 @@ export default NewTaskForm;` }],
     partial: 'Si se llama a `onAdd(title)` sin recortar los espacios, se conceden 1,5 de los 2,5 puntos.',
   },
   {
-    id: 'B8', kind: 'express', category: 'Completar código', tech: 'Express y PostgreSQL', title: 'Crear un producto con validación',
+    id: 'B8', conceptual: true, kind: 'express', category: 'Completar código', tech: 'Express y PostgreSQL', title: 'Crear un producto con validación',
     concepts: ['req.body', '400', 'INSERT ... RETURNING', '201'], level: 'Intermedia-baja', minutes: '12',
     statement: `Se pide completar \`POST /products\`:
 
 1. Si \`name\` no es un texto con contenido o \`price\` no es un número mayor o igual que 0, responder \`400\` con \`{ "error": "Invalid product" }\`.
 2. Si los datos son válidos, insertar el producto en \`products\` y responder \`201\` con la fila creada.
 
-La tabla tiene las columnas \`id\` (generado), \`name\` y \`price\`. La app ya usa \`express.json()\`.`,
+La tabla tiene las columnas \`id\` (generado), \`name\` y \`price\`. La app ya usa \`express.json()\`.
+
+**Parte conceptual.** El formulario de React ya comprueba que el nombre no esté vacío. Justificar por qué el servidor tiene que validar igualmente. Se responde en 2-3 líneas, como comentario al final del fichero.`,
     files: [{ name: 'routes/products.js', lang: 'js', code: `const express = require("express");
 const { Pool } = require("pg");
 
@@ -1206,7 +1261,10 @@ router.post("/", async (req, res) => {
   // 2. Insertar y responder
 });
 
-module.exports = router;` }],
+module.exports = router;
+
+// Parte conceptual (2-3 líneas):
+// ` }],
     expected: `| Cuerpo | Respuesta |
 |---|---|
 | \`{ "name": "Lámpara", "price": 25 }\` | \`201\` con \`{ "id": 9, "name": "Lámpara", "price": 25 }\` |
@@ -1226,17 +1284,22 @@ return res.status(400).json({ error: "Invalid product" });
 [name.trim(), price]
   );
   res.status(201).json(rows[0]);
-});`,
-      changes: ['Validación de \`name\` y \`price\` con \`return\` y 400.', '\`INSERT\` parametrizado con \`RETURNING\`.', 'Respuesta 201 con \`rows[0]\`.'],
+});
+
+// Parte conceptual: la validación del cliente solo mejora la experiencia; cualquiera puede
+// llamar a la API sin pasar por la interfaz (curl, Postman, otro script). El servidor es
+// el único punto que protege los datos, así que valida todo lo que llega en req.body.`,
+      changes: ['Validación de \`name\` y \`price\` con \`return\` y 400.', '\`INSERT\` parametrizado con \`RETURNING\`.', 'Respuesta 201 con \`rows[0]\`.', 'Parte conceptual: respuesta en un comentario al final del fichero.'],
       explanation: 'Los datos de `req.body` los decide el cliente, así que se validan antes de tocar la base de datos. La consulta parametrizada evita la inyección SQL y `RETURNING` devuelve el `id` generado sin una segunda consulta.',
       alternatives: 'Validar con un esquema de Zod y `safeParse`, como en el laboratorio 7. `RETURNING *`.',
     },
     rubric: [
       { text: 'Valida \`name\`', points: 2 },
-      { text: 'Valida \`price\` (número y no negativo)', points: 2 },
-      { text: 'Responde 400 y termina con \`return\`', points: 1.5 },
-      { text: '\`INSERT\` parametrizado con \`await\`', points: 2.5 },
-      { text: 'Responde 201 con la fila creada', points: 2 },
+      { text: 'Valida \`price\` (número y no negativo)', points: 1.5 },
+      { text: 'Responde 400 y termina con \`return\`', points: 1 },
+      { text: '\`INSERT\` parametrizado con \`await\`', points: 2 },
+      { text: 'Responde 201 con la fila creada', points: 1.5 },
+      { text: 'Parte conceptual: la API se puede llamar sin la interfaz, así que el servidor valida siempre', points: 2 },
     ],
     penalties: ['Concatenar los valores en el SQL: no se conceden los 2,5 puntos de la consulta.'],
     partial: 'Si responde 201 con `req.body` en lugar de la fila creada, se conceden 1 de los 2 puntos.',

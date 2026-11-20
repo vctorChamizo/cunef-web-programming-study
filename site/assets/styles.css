@@ -313,6 +313,30 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .continue-card .t { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .continue-card .s { font-size: 0.85rem; color: var(--text-3); }
 
+/* ---------- How it all fits together ---------- */
+.flow { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 0; }
+.flow-step { position: relative; display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; padding-bottom: 14px; }
+.flow-step::before { content: ""; position: absolute; left: 19px; top: 40px; bottom: 0; width: 2px; background: var(--line); }
+.flow-step:last-child::before { display: none; }
+.flow-n { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: color-mix(in srgb, var(--lc) 16%, transparent); color: var(--lc); font-weight: 750; font-size: 0.95rem; border: 2px solid var(--lc); position: relative; z-index: 1; background-clip: padding-box; }
+.flow-body { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--lc); border-radius: var(--radius); padding: 10px 14px; min-width: 0; }
+.flow-body h3 { margin: 2px 0 4px; font-size: 1rem; }
+.flow-body p { margin: 0; font-size: 0.92rem; color: var(--text-2); }
+.flow-lane { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--lc); }
+.flow-where { display: inline-block; margin-top: 6px; font-size: 0.78rem; }
+.mw-list { margin: 0; padding: 0; list-style: none; counter-reset: mw; display: grid; gap: 8px; }
+.mw-list li { counter-increment: mw; display: grid; grid-template-columns: 28px minmax(0, 220px) minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.mw-list li::before { content: counter(mw); font-weight: 750; color: var(--accent); }
+.mw-list code { white-space: normal; word-break: break-word; }
+.mw-list span { font-size: 0.92rem; color: var(--text-2); }
+.folders { margin: 8px 0 0; display: grid; gap: 4px; }
+.folders dt { margin-top: 6px; }
+.folders dd { margin: 0; font-size: 0.88rem; color: var(--text-2); }
+@media (max-width: 640px) {
+  .mw-list li { grid-template-columns: 24px minmax(0, 1fr); }
+  .mw-list li span { grid-column: 2; }
+}
+
 /* ---------- Practice exam: practical part ---------- */
 .part-head { display: flex; align-items: center; gap: 12px; margin: 36px 0 4px; }
 .part-head h2 { margin: 0; }

@@ -4,7 +4,7 @@
 // - fixes: register corrections (formal, impersonal) applied to questions of the generated quizzes.
 // - add: questions appended to the generated quizzes, by quiz. They include every question of the
 //   practice exams, so that every practice exam is built only from quiz questions.
-// - quizzes: the quizzes without a lab (DOM, Context API).
+// - quizzes: the quizzes without a lab (DOM, Context API, architecture).
 // - SIMULACROS: each practice exam = 8 multiple-choice questions taken from the quizzes (by id) and
 //   3 practical exercises taken from exercises.js (by id), as in the final exam (4 + 6 points).
 // Origin of the questions: ids without "mx" or "ctx" come from the coordinator's study-site bank
@@ -969,6 +969,275 @@ window.PRACTICE_BANK = {
           "why": "Una ruta protegida muestra su contenido si hay sesión y, si no, redirige al login con el componente `Navigate` de React Router."
         }
       ]
+    },
+    "arch": {
+      "name": "Quiz Arquitectura",
+      "short": "ARQ",
+      "title": "Arquitectura: cómo encaja todo",
+      "lab": null,
+      "sessions": "repaso transversal",
+      "questions": [
+        {
+          "id": "arch-01",
+          "type": "mc",
+          "q": "En la Práctica 2, ¿qué parte de la aplicación se ejecuta en el navegador del usuario?",
+          "choices": [
+            "Las rutas y los controladores de Express",
+            "El cliente de React: componentes, estado y peticiones con Axios",
+            "Las consultas a PostgreSQL con `pg`",
+            "La firma del JWT con `jwt.sign`"
+          ],
+          "answer": 1,
+          "why": "El navegador descarga y ejecuta el cliente de React (`client/`). Express, `pg`, `jwt.sign` y `jwt.verify` se ejecutan en el servidor (`api/`), en Node.js."
+        },
+        {
+          "id": "arch-02",
+          "type": "mc",
+          "q": "¿Dónde se ejecuta `jwt.verify` cuando llega una petición protegida?",
+          "choices": [
+            "En el interceptor de Axios, antes de enviar la petición",
+            "En PostgreSQL, al consultar la tabla `users`",
+            "En el servidor, dentro del middleware de autenticación",
+            "En `AuthContext`, al leer el token de `localStorage`"
+          ],
+          "answer": 2,
+          "why": "Solo el servidor conoce `JWT_SECRET`, así que solo él puede comprobar la firma. El cliente guarda y envía el token, pero no lo verifica."
+        },
+        {
+          "id": "arch-03",
+          "type": "mc",
+          "q": "Un usuario escribe el nombre de un elemento y pulsa «Añadir». ¿Cuál es el recorrido correcto?",
+          "choices": [
+            "Estado de React → Axios (`POST`) → ruta de Express → middleware → controlador → modelo con `pg` → PostgreSQL → respuesta → estado → render",
+            "Estado de React → modelo con `pg` → PostgreSQL → render, sin pasar por Express",
+            "Ruta de Express → estado de React → Axios → PostgreSQL → controlador",
+            "Axios → PostgreSQL → Express → React, porque la base de datos responde primero"
+          ],
+          "answer": 0,
+          "why": "El cliente nunca habla con la base de datos: envía una petición HTTP a la API, la API atraviesa su cadena hasta el modelo, que consulta PostgreSQL, y la respuesta vuelve al cliente, que actualiza el estado y React vuelve a renderizar."
+        },
+        {
+          "id": "arch-04",
+          "type": "mc",
+          "q": "¿Qué capa de la API es la única que ejecuta SQL?",
+          "choices": [
+            "Las rutas (`routes/`)",
+            "Los controladores (`controllers/`)",
+            "Los middleware (`middleware/`)",
+            "Los modelos (`models/`)"
+          ],
+          "answer": 3,
+          "why": "El modelo es la única capa que habla con los datos y devuelve datos, nunca respuestas HTTP. Por eso cambiar el almacenamiento solo obliga a reescribir `models/`."
+        },
+        {
+          "id": "arch-05",
+          "type": "mc",
+          "q": "¿Por qué `app.use(express.json())` se registra antes de las rutas?",
+          "choices": [
+            "Porque Express solo admite un middleware antes de las rutas",
+            "Para que `req.body` ya esté analizado cuando lo lean la validación y el controlador",
+            "Para que las respuestas se envíen en formato JSON",
+            "Para que la base de datos acepte el cuerpo de la petición"
+          ],
+          "answer": 1,
+          "why": "Express ejecuta los middleware en el orden en que se declaran. Si `express.json()` fuera después de las rutas, estas recibirían `req.body` como `undefined`."
+        },
+        {
+          "id": "arch-06",
+          "type": "mc",
+          "q": "Con `router.post(\"/\", requireAuth, validateItem, controller.create)`, llega una petición **sin token** y con el cuerpo vacío. ¿Qué responde la API?",
+          "choices": [
+            "`400`, porque el cuerpo no supera la validación",
+            "`201`, porque el controlador crea el elemento igualmente",
+            "`401`, porque `requireAuth` corta la petición antes de validar",
+            "`500`, porque falta `req.user`"
+          ],
+          "answer": 2,
+          "why": "Los middleware se ejecutan en orden. `requireAuth` responde `401` y no llama a `next()`, así que la validación y el controlador no llegan a ejecutarse."
+        },
+        {
+          "id": "arch-07",
+          "type": "mc",
+          "q": "¿Por qué el manejador de errores `(err, req, res, next)` se registra el último?",
+          "choices": [
+            "Porque solo recibe los errores de lo que se ha declarado antes que él",
+            "Porque Express lo ejecuta siempre al final de cada petición, haya error o no",
+            "Porque así se ejecuta antes que `express.json()`",
+            "Porque debe estar después de `app.listen`"
+          ],
+          "answer": 0,
+          "why": "Express lo reconoce por sus cuatro parámetros y le pasa los errores de los middleware y las rutas anteriores. Registrado antes de las rutas, no recibiría sus errores."
+        },
+        {
+          "id": "arch-08",
+          "type": "mc",
+          "q": "El middleware de validación con Zod recibe un cuerpo que no cumple el esquema. ¿Qué código devuelve?",
+          "choices": [
+            "`401 Unauthorized`",
+            "`400 Bad Request`",
+            "`404 Not Found`",
+            "`500 Internal Server Error`"
+          ],
+          "answer": 1,
+          "why": "Datos de entrada incorrectos son un error del cliente: `400`. El middleware responde y no llama a `next()`, así que el controlador solo recibe datos válidos."
+        },
+        {
+          "id": "arch-09",
+          "type": "mc",
+          "q": "Un usuario con token válido intenta borrar una tarea que pertenece a otro usuario. ¿Qué capa decide responder `403`?",
+          "choices": [
+            "El modelo, porque es quien consulta la tabla",
+            "El middleware de autenticación",
+            "El controlador, comparando `req.user` con el propietario de la tarea",
+            "El middleware `cors`"
+          ],
+          "answer": 2,
+          "why": "La autenticación solo dice quién es (`401` si falla). Decidir si puede hacer la operación es autorización, y la toma el controlador con los datos que le devuelve el modelo."
+        },
+        {
+          "id": "arch-10",
+          "type": "mc",
+          "q": "El modelo no encuentra la fila pedida en `GET /tasks/9`. ¿Qué ocurre?",
+          "choices": [
+            "El modelo responde `404` directamente",
+            "PostgreSQL devuelve un error y la API responde `500`",
+            "El modelo devuelve `undefined` (o `null`) y el controlador responde `404`",
+            "Express responde `404` porque la ruta no existe"
+          ],
+          "answer": 2,
+          "why": "El modelo devuelve datos, nunca respuestas HTTP. Convertir «no hay fila» en un `404` es trabajo del controlador."
+        },
+        {
+          "id": "arch-11",
+          "type": "mc",
+          "q": "El modelo falla porque se ha caído la conexión con PostgreSQL. ¿Qué recibe el cliente?",
+          "choices": [
+            "Un `500` con un mensaje genérico, enviado por el manejador de errores",
+            "El texto completo del error de PostgreSQL",
+            "Un `401`, porque la sesión deja de ser válida",
+            "Un `404`, porque no hay datos"
+          ],
+          "answer": 0,
+          "why": "El error llega al manejador de errores, que lo registra en el servidor y responde `500` sin detalles internos. Enviar trazas o consultas al navegador es un riesgo de seguridad."
+        },
+        {
+          "id": "arch-12",
+          "type": "mc",
+          "q": "¿Por qué un formulario se valida en el cliente y también en el servidor?",
+          "choices": [
+            "Porque Zod solo funciona en el servidor",
+            "Porque la validación del cliente sustituye a la del servidor en producción",
+            "En el cliente, para avisar al usuario al momento; en el servidor, porque cualquiera puede llamar a la API sin pasar por la interfaz",
+            "Para que PostgreSQL no tenga que comprobar los tipos"
+          ],
+          "answer": 2,
+          "why": "La validación del cliente mejora la experiencia, pero no protege nada: una petición con `curl` se la salta. La del servidor es obligatoria."
+        },
+        {
+          "id": "arch-13",
+          "type": "mc",
+          "q": "Tras el login, ¿cómo llega el token a cada petición protegida en la Práctica 2?",
+          "choices": [
+            "El servidor lo recuerda en memoria y lo asocia a cada petición",
+            "Se envía en la URL como parámetro de consulta",
+            "El navegador lo envía solo, en una cookie",
+            "El cliente lo guarda en `localStorage` y un interceptor de Axios lo añade en `Authorization: Bearer <token>`"
+          ],
+          "answer": 3,
+          "why": "`signIn` guarda el token que devuelve `/auth/login`. El interceptor de petición de `services/api.js` lo lee y lo añade a la cabecera; el servidor no guarda el JWT."
+        },
+        {
+          "id": "arch-14",
+          "type": "mc",
+          "q": "En el controlador de una ruta protegida, ¿qué es `req.user` y de dónde sale?",
+          "choices": [
+            "El cuerpo de la petición, que envía el cliente",
+            "Un valor que el interceptor de Axios añade a la petición",
+            "Una fila de la tabla `users` que carga Express automáticamente",
+            "El contenido del token, que el middleware de autenticación guarda tras verificarlo"
+          ],
+          "answer": 3,
+          "why": "`requireAuth` verifica el token con `jwt.verify` y guarda su *payload* en `req.user`. El controlador se fía de ese dato porque está firmado por el servidor, no de lo que mande el cliente."
+        },
+        {
+          "id": "arch-15",
+          "type": "mc",
+          "q": "La API responde `401` a una petición autenticada porque el token ha caducado. ¿Qué hace el cliente de la Práctica 2?",
+          "choices": [
+            "El interceptor de respuesta borra el token y lleva al usuario al login",
+            "Axios repite la petición hasta que funciona",
+            "React renueva el token sin avisar",
+            "La API devuelve un token nuevo en la misma respuesta"
+          ],
+          "answer": 0,
+          "why": "Cuando el token caduca, `jwt.verify` falla y la API responde `401`. El interceptor de respuesta de `services/api.js` elimina el token y redirige a `/login` para iniciar sesión de nuevo."
+        },
+        {
+          "id": "arch-16",
+          "type": "mc",
+          "q": "¿Por qué la API necesita `cors({ origin: process.env.CLIENT_ORIGIN })`?",
+          "choices": [
+            "Para cifrar las peticiones entre el cliente y la API",
+            "Porque el cliente (`localhost:5173`) y la API (`localhost:3000`) son orígenes distintos y el navegador bloquea la respuesta si la API no lo autoriza",
+            "Para que la API pueda conectarse a PostgreSQL",
+            "Para que Express acepte cuerpos en formato JSON"
+          ],
+          "answer": 1,
+          "why": "Por la política de mismo origen, el navegador solo entrega a la página las respuestas de otro origen si el servidor lo permite con las cabeceras CORS."
+        },
+        {
+          "id": "arch-17",
+          "type": "mc",
+          "q": "Falta la configuración de CORS en la API. ¿Dónde se ve el error?",
+          "choices": [
+            "En la consola del navegador: la petición llega a la API, pero el navegador descarta la respuesta",
+            "En la terminal de la API, como un error de Express",
+            "En PostgreSQL, como una consulta rechazada",
+            "En ningún sitio: la petición funciona igual"
+          ],
+          "answer": 0,
+          "why": "CORS lo aplica el navegador, no el servidor. La API puede haber respondido bien; es el navegador quien impide que el código del cliente lea la respuesta."
+        },
+        {
+          "id": "arch-18",
+          "type": "mc",
+          "q": "¿Qué ventaja tiene separar la API en rutas, controladores y modelos?",
+          "choices": [
+            "Que la API ocupa menos memoria",
+            "Que se puede prescindir de los middleware",
+            "Que cada capa tiene una responsabilidad: cambiar el almacenamiento solo obliga a reescribir los modelos",
+            "Que el cliente puede llamar directamente a los modelos"
+          ],
+          "answer": 2,
+          "why": "Las rutas asocian URL y controlador; el controlador decide la respuesta; el modelo habla con los datos. Así se pasó del array en memoria de L5 a PostgreSQL en L6 sin tocar rutas ni controladores."
+        },
+        {
+          "id": "arch-19",
+          "type": "mc",
+          "q": "Después de `const response = await api.post(\"/items\", { name })`, ¿qué hace que el elemento nuevo aparezca en la lista?",
+          "choices": [
+            "Que PostgreSQL actualiza la pantalla al insertar la fila",
+            "Que el componente guarda los datos con su *setter* de estado y React vuelve a renderizar",
+            "Que Axios modifica el DOM con la respuesta",
+            "Que Express envía el HTML de la lista actualizada"
+          ],
+          "answer": 1,
+          "why": "La API solo devuelve datos JSON. El cliente actualiza su estado con un valor nuevo (por ejemplo, un array nuevo con el elemento) y React vuelve a pintar el componente."
+        },
+        {
+          "id": "arch-20",
+          "type": "mc",
+          "q": "En la Práctica 2, ¿qué fichero crea el cliente de Axios con la dirección base de la API?",
+          "choices": [
+            "`api/src/app.js`",
+            "`api/src/db.js`",
+            "`client/src/main.jsx`",
+            "`client/src/services/api.js`"
+          ],
+          "answer": 3,
+          "why": "`client/src/services/api.js` crea el cliente con `axios.create({ baseURL: import.meta.env.VITE_API_URL })` y define los interceptores del token y del `401`. `api/src/db.js` crea la conexión de `pg` con PostgreSQL."
+        }
+      ]
     }
   },
   "adapted": [
@@ -991,12 +1260,12 @@ window.SIMULACROS = [
     "questions": [
       "js-16",
       "js-35",
-      "js-11",
       "express-23",
       "express-12",
       "components-13",
       "state-07",
-      "components-22"
+      "arch-03",
+      "arch-06"
     ],
     "practical": [
       "A1",
@@ -1009,12 +1278,12 @@ window.SIMULACROS = [
     "questions": [
       "js-19",
       "js-38",
-      "js-46",
       "auth-01",
       "sql-19",
       "components-29",
       "state-13",
-      "state-20"
+      "arch-12",
+      "arch-16"
     ],
     "practical": [
       "B1",
@@ -1027,12 +1296,12 @@ window.SIMULACROS = [
     "questions": [
       "js-25",
       "js-41",
-      "js-12",
       "express-39",
       "sql-14",
       "components-34",
       "state-12",
-      "routing-11"
+      "arch-10",
+      "arch-13"
     ],
     "practical": [
       "D2",
@@ -1044,13 +1313,13 @@ window.SIMULACROS = [
     "n": 4,
     "questions": [
       "js-mx401",
-      "js-mx402",
       "js-mx403",
       "express-mx404",
       "sql-mx405",
       "components-mx406",
       "state-mx407",
-      "state-mx409"
+      "arch-05",
+      "arch-09"
     ],
     "practical": [
       "B4",
@@ -1063,12 +1332,12 @@ window.SIMULACROS = [
     "questions": [
       "js-mx501",
       "js-mx502",
-      "dom-12",
       "express-mx504",
       "auth-mx505",
       "components-mx506",
-      "state-mx507",
-      "state-mx509"
+      "state-mx509",
+      "arch-01",
+      "arch-14"
     ],
     "practical": [
       "A5",
@@ -1081,12 +1350,12 @@ window.SIMULACROS = [
     "questions": [
       "js-mx601",
       "js-mx602",
-      "js-mx603",
       "express-mx604",
       "sql-mx605",
       "components-mx607",
       "state-mx609",
-      "state-mx408"
+      "arch-07",
+      "arch-19"
     ],
     "practical": [
       "B9",

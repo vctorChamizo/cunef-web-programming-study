@@ -24,8 +24,8 @@ site/                 everything that is published
     quizzes.js        GENERATED: quizzes 1-10 and practice exams
     guides.js         GENERATED: theory guides, converted from Markdown
     exercises.js      practical exercises: study mode and practical part of the practice exams
-    practice-bank.js  register fixes and extra questions for the quizzes, the DOM and Context API
-                      quizzes, and the composition of the six practice exams
+    practice-bank.js  register fixes and extra questions for the quizzes, the DOM, Context API and
+                      architecture quizzes, and the composition of the six practice exams
 .github/workflows/    syntax check and Pages deployment
 ```
 
@@ -46,6 +46,9 @@ disk and on GitHub Pages.
   test and rubric-based self-assessment of the practical part, for an indicative grade out of 10.
 - **Practical exercises**: 21 short exercises, at least six per block, (fix, complete, connect, explain) with two progressive
   hints, the reference solution on request and a rubric for self-assessment out of 10.
+- **How it all fits together** (`/arquitectura`): the full path of a request from the React input to
+  PostgreSQL and back, the order of the Express middleware and the Practice 2 folders, with an
+  architecture quiz (`arch`, 20 questions). Content in `course.js` (`architecture`).
 - **Error review**: every failed question is kept until it is answered correctly anywhere.
 - **Search** (`Ctrl K`, `⌘ K` or `/`) across guide sections, questions, sessions, labs and docs.
 - **Progress** page, light and dark themes, mobile layout, offline support.
@@ -73,7 +76,8 @@ equivalent converter (same header ids and `sourceCode` blocks). When the content
 
 `site/data/exercises.js` and `site/data/practice-bank.js` are hand-written here as well. Every
 practice exam is built only from quiz questions (8, by id, 3/2/3 by block) and practical exercises
-(3, by id), as listed in `SIMULACROS`; the `EXAMS` of the generated `quizzes.js` are no longer used.
+(3, by id), as listed in `SIMULACROS`. Each practice exam has at least two architecture questions
+and one exercise with a conceptual part (`conceptual: true`); the `EXAMS` of the generated `quizzes.js` are no longer used.
 The review pack in `cunef/01-asignaturas/03-evaluacion/examenes/revision-coordinador/` is exported
 from these files.
 

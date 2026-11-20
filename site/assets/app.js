@@ -67,6 +67,8 @@
   const fmtNum = (n, d = 1) => n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
   const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
   const fmtPts = (n) => n.toLocaleString('es-ES', { maximumFractionDigits: 2 });
+  // "sesiones 10-11", "sesión 37"; a non-numeric value ("repaso transversal") is shown as is.
+  const sessLabel = (v) => { const t = String(v ?? ''); return /^\d/.test(t) ? `${/[-,]/.test(t) ? 'sesiones' : 'sesión'} ${t}` : t; };
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
   const fmtShort = (ts) => new Date(ts).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
   const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
@@ -155,6 +157,7 @@
       </div>
       <div class="nav-group"><div class="nav-label">Estudiar</div>
         ${BLOCKS.filter((b) => b.guide && G[b.guide]).map((b) => navLink(`#/guia/${b.guide}`, `Guía del bloque ${b.roman}`, 'g-' + b.guide, active, '', icon('book'))).join('')}
+        ${C.architecture ? navLink('#/arquitectura', esc(C.architecture.title), 'arquitectura', active, '', icon('layers')) : ''}
       </div>
       <div class="nav-group"><div class="nav-label">Practicar</div>
         ${navLink('#/quizzes', 'Quizzes por laboratorio', 'quizzes', active, '', icon('check-square'))}
@@ -238,7 +241,7 @@
   function quizCard(n) {
     const q = Q[n];
     const b = blockOfQuiz(n);
-    if (!q) { const m = quizInfo(n); return `<div class="card muted-card quiz-card"><div class="card-top"><span class="q-num">${esc(quizName(n))}${m.sessions ? ` · ${/[-,]/.test(m.sessions) ? 'sesiones' : 'sesión'} ${esc(m.sessions)}` : ''}</span><span class="chip">Próximamente</span></div><h3>${esc(m.title || 'Disponible próximamente')}</h3><p>${/^\d+$/.test(String(n)) ? `Quiz del laboratorio L${n}.` : 'Quiz de repaso del tema, sin laboratorio asociado.'}</p></div>`; }
+    if (!q) { const m = quizInfo(n); return `<div class="card muted-card quiz-card"><div class="card-top"><span class="q-num">${esc(quizName(n))}${m.sessions ? ` · ${esc(sessLabel(m.sessions))}` : ''}</span><span class="chip">Próximamente</span></div><h3>${esc(m.title || 'Disponible próximamente')}</h3><p>${/^\d+$/.test(String(n)) ? `Quiz del laboratorio L${n}.` : 'Quiz de repaso del tema, sin laboratorio asociado.'}</p></div>`; }
     const total = objective(q.questions), essays = q.questions.length - total;
     const rec = S.quiz[n], cur = S.current['quiz-' + n];
     let foot;
@@ -251,7 +254,7 @@
       ${icon('arrow-right', 'go')}
       <div class="card-top"><span class="q-num">${esc(quizName(n))} · ${q.lab ? esc(q.lab) : 'Sin laboratorio'}</span><span class="chip ${b.color}">Bloque ${b.roman}</span></div>
       <h3>${esc(q.title)}</h3>
-      <p>${plural(q.questions.length, 'pregunta', 'preguntas')}${essays ? ` · ${essays} de programar` : ''} · ${/[-,]/.test(String(q.sessions)) ? 'sesiones' : 'sesión'} ${esc(q.sessions)}</p>
+      <p>${plural(q.questions.length, 'pregunta', 'preguntas')}${essays ? ` · ${essays} de programar` : ''} · ${esc(sessLabel(q.sessions))}</p>
       ${rec?.best != null ? bar(pct(rec.best, rec.total || total), pct(rec.best, rec.total || total) >= 70 ? 'ok' : '') : ''}
       <div class="card-foot">${foot}</div></a>`;
   }
@@ -323,6 +326,8 @@
       </section>
 
       <div class="grid-2" style="margin-top:24px">${cont}${map}</div>
+      ${C.architecture ? `<a class="card continue-card arch-banner" href="#/arquitectura" style="margin-top:16px"><span class="icon-tile">${icon('layers')}</span>
+          <div class="txt"><div class="s">Repaso transversal</div><div class="t">${esc(C.architecture.title)}</div><div class="s">Del input del usuario a PostgreSQL y de vuelta: capas, middleware y carpetas de la Práctica 2</div></div>${icon('arrow-right')}</a>` : ''}
 
       ${sectionHead('Progreso', `<a href="#/progreso">Ver el detalle ${icon('arrow-right')}</a>`)}
       <div class="grid-4 stats">
@@ -424,9 +429,37 @@
         lead: 'El curso semana a semana, en el mismo orden que Canvas: las sesiones de cada semana, su laboratorio y la documentación de referencia.',
         meta: `<span class="chip plain">${plural(BLOCKS.reduce((a, b) => a + b.weekList.length, 0), 'semana', 'semanas')}</span><span class="chip plain">${plural(SESSIONS.length, 'sesión', 'sesiones')}</span><span class="chip plain">${plural(C.labs.length, 'laboratorio', 'laboratorios')}</span>` })}
       ${BLOCKS.map((b) => `${sectionHead(`<span style="color:var(--${b.color})">Bloque ${b.roman}</span> · ${esc(b.title)}`, `<a href="#/bloque/${b.id}">Ver el bloque ${icon('arrow-right')}</a>`)}${weeksHtml(b)}`).join('')}
+      ${C.architecture ? `${sectionHead('Repaso transversal')}
+      <div class="grid-2">
+        <a class="card" href="#/arquitectura">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('layers')}</span></div><h3>${esc(C.architecture.title)}</h3><p>El recorrido completo de una petición, el orden de los middleware y la carpeta de la Práctica 2 donde vive cada pieza.</p></a>
+        ${Q.arch ? `<a class="card" href="#/quiz/arch">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('check-square')}</span></div><h3>${esc(quizName('arch'))}</h3><p>${plural(Q.arch.questions.length, 'pregunta', 'preguntas')} sobre cómo encajan cliente, API y base de datos.</p></a>` : ''}
+      </div>` : ''}
       ${sectionHead('Prácticas')}
       <div class="grid-2">${C.practices.map((x) => `<div class="card"><div class="card-top"><span class="icon-tile">${icon('code')}</span><span class="chip plain">${esc(x.name)}</span></div><h3>${esc(x.title)}</h3><p>${esc(x.detail)}</p></div>`).join('')}</div>
       <p class="muted" style="margin-top:14px;font-size:.88rem">Los enunciados de las prácticas, las presentaciones de cada semana y las entregas están en Canvas.</p>`, 'Mapa del curso');
+  }
+
+  // ---------- How it all fits together ----------
+  function architecturePage() {
+    const A = C.architecture;
+    if (!A) return notFound();
+    const laneCls = { client: 'b3', net: 'muted', server: 'b2', db: 'b1' };
+    render(`
+      ${pageHead({ path: [[A.title, '']], eyebrow: 'Repaso transversal', title: esc(A.title), lead: inline(A.lead),
+        meta: Q.arch ? `<a class="chip accent" href="#/quiz/arch" style="text-decoration:none">${icon('check-square')}${esc(quizName('arch'))} · ${plural(Q.arch.questions.length, 'pregunta', 'preguntas')}</a>` : '' })}
+      ${sectionHead('El recorrido de una petición')}
+      <p class="muted" style="margin:-4px 0 12px">${inline(A.example)}</p>
+      <ol class="flow" aria-label="Recorrido de una petición, paso a paso">${A.steps.map((st, i) => `<li class="flow-step lane-${st.lane}" style="--lc:var(--${laneCls[st.lane]}, var(--text-3))">
+        <span class="flow-n" aria-hidden="true">${i + 1}</span>
+        <div class="flow-body"><span class="flow-lane">${esc(A.lanes[st.lane])}</span><h3>${esc(st.title)}</h3><p>${inline(st.detail)}</p>${st.where ? `<code class="flow-where">${esc(st.where)}</code>` : ''}</div></li>`).join('')}</ol>
+      <div class="callout warn">${icon('alert')}<div>${inline(A.errorNote)}</div></div>
+      ${sectionHead('El orden de los middleware')}
+      <ol class="mw-list">${A.middleware.map((m) => `<li><code>${esc(m.code)}</code><span>${inline(m.why)}</span></li>`).join('')}</ol>
+      ${sectionHead('Qué código HTTP sale de cada capa')}
+      <div class="table-wrap"><table><thead><tr><th>Capa</th><th>Código</th></tr></thead><tbody>${A.codes.map(([a, b]) => `<tr><td>${inline(a)}</td><td>${inline(b)}</td></tr>`).join('')}</tbody></table></div>
+      ${sectionHead('Dónde vive cada pieza en la Práctica 2')}
+      <div class="grid-2">${[['api', 'api/ · Express y PostgreSQL'], ['client', 'client/ · React, Axios y AuthContext']].map(([k, t]) => `<div class="card"><h3>${esc(t)}</h3><dl class="folders">${A.folders[k].map(([f, d]) => `<dt><code>${esc(f)}</code></dt><dd>${inline(d)}</dd>`).join('')}</dl></div>`).join('')}</div>
+      <div class="card-foot" style="margin-top:20px;gap:10px">${Q.arch ? `<a class="btn" href="#/quiz/arch">${icon('play')}Hacer el ${esc(quizName('arch'))}</a>` : ''}${G.II ? '<a class="btn secondary" href="#/guia/II">Guía del bloque II</a>' : ''}${G.III ? '<a class="btn secondary" href="#/guia/III">Guía del bloque III</a>' : ''}</div>`, A.title);
   }
 
   // ---------- Guide ----------
@@ -752,7 +785,7 @@
     const nextN = QUIZ_ORDER[QUIZ_ORDER.indexOf(String(n)) + 1];
     const head = () => pageHead({
       path: [[`Bloque ${b.roman}`, `#/bloque/${b.id}`], [quizName(n), '']],
-      eyebrow: `${esc(quizName(n))} · ${quiz.lab ? `Laboratorio ${esc(quiz.lab.replace('L', ''))}` : 'Sin laboratorio'} · ${/[-,]/.test(String(quiz.sessions)) ? 'sesiones' : 'sesión'} ${esc(quiz.sessions)}`, eyebrowStyle: `color:var(--${b.color})`,
+      eyebrow: `${esc(quizName(n))} · ${quiz.lab ? `Laboratorio ${esc(quiz.lab.replace('L', ''))}` : 'Sin laboratorio'} · ${esc(sessLabel(quiz.sessions))}`, eyebrowStyle: `color:var(--${b.color})`,
       title: esc(quiz.title),
     });
     setLast(`#/quiz/${n}`, `${quizName(n)} · ${quiz.title}`, `Bloque ${b.roman}`);
@@ -1020,7 +1053,7 @@
   function exerciseCard(x) {
     const r = S.ex[x.id];
     return `<a class="card ex-card" href="#/ejercicio/${x.id}">${icon('arrow-right', 'go')}
-      <div class="card-top"><span class="q-num">Ejercicio ${esc(x.id)} · ${esc(x.category)}</span><span class="chip plain">${esc(x.tech)}</span></div>
+      <div class="card-top"><span class="q-num">Ejercicio ${esc(x.id)} · ${esc(x.category)}</span><span class="chip plain">${esc(x.tech)}</span></div>${x.conceptual ? `<span class="chip accent" style="align-self:flex-start;margin-bottom:6px">${icon('layers')}Incluye parte conceptual</span>` : ''}
       <h3>${esc(x.title)}</h3>
       <p>${x.concepts.map(esc).join(' · ')}</p>
       <div class="card-foot"><span class="chip plain">${icon('clock')}${esc(x.minutes)} min</span><span class="chip plain">${esc(x.level)}</span>${r?.score != null ? `<span class="chip ${r.score >= 7 ? 'ok' : r.score >= 5 ? 'warn' : 'bad'}">${icon('award')}${fmtPts(r.score)} / 10</span>` : r?.code ? '<span class="chip warn">Empezado</span>' : ''}</div></a>`;
@@ -1194,7 +1227,7 @@
   function buildIndex() {
     const items = [];
     const add = (o) => { o.nt = fold(o.title); o.nx = fold(o.text || ''); items.push(o); };
-    [['Mapa del curso', '#/curso', 'semanas sesiones calendario canvas practicas'], ['Simulacros del examen', '#/simulacros', 'simulacro test aleatorio examen'],
+    [['Mapa del curso', '#/curso', 'semanas sesiones calendario canvas practicas'], ['Cómo encaja todo', '#/arquitectura', 'arquitectura capas middleware orden cors jwt cliente servidor peticion recorrido carpetas practica 2'], ['Simulacros del examen', '#/simulacros', 'simulacro test aleatorio examen'],
       ['Quizzes por laboratorio', '#/quizzes', 'quiz autoevaluacion'], ['Repaso de errores', '#/repaso', 'falladas errores repasar'],
       ['Laboratorios y recursos', '#/recursos', 'laboratorio enunciado solucion documentacion mdn'], ['Progreso', '#/progreso', 'resultados borrar progreso estadisticas']]
       .forEach(([t, h, k]) => add({ type: 'page', title: t, sub: 'Página', href: h, text: k, ic: 'chevron' }));
@@ -1401,6 +1434,7 @@
       case 'quiz': return quizPage(arg);
       case 'simulacros': return simulacrosPage();
       case 'ejercicios': return exercisesPage();
+      case 'arquitectura': return architecturePage();
       case 'ejercicio': return exercisePage(arg);
       case 'simulacro': return simulacroPage(arg);
       case 'repaso': return arg === 'practicar' ? reviewRun(a3) : reviewPage();

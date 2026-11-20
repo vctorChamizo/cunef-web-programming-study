@@ -90,7 +90,7 @@ window.COURSE = {
     },
     {
       id: 3, roman: 'III', title: 'Frontend con React', subtitle: 'Componentes, hooks, datos, navegación y estado compartido', weeks: 'Semanas 10 a 13',
-      guide: 'III', quizzes: [8, 9, 'context', 10],
+      guide: 'III', quizzes: [8, 9, 'context', 10, 'arch'],
       notes: [ // [V-261, V-262]
         'Las peticiones a la API se hacen con Axios, con un cliente creado con axios.create y la URL base en VITE_API_URL.',
         'Las promesas se trabajan con async/await.',
@@ -138,6 +138,69 @@ window.COURSE = {
   quizMeta: {
     dom: { name: 'Quiz DOM', short: 'DOM', title: 'Manipulación del DOM', sessions: '10-11' },
     context: { name: 'Quiz Context API', short: 'CTX', title: 'Estado compartido y Context API', sessions: '37-38' },
+  },
+  // "Cómo encaja todo": the full path of a request, the order of the middleware and the folders of
+  // Practice 2. Taken from the Practice 2 starter (class examples repository, practicas/
+  // practica-2-starter), the block II guide (3.4-3.5, 4.1-4.2, 6, 7.1-7.2) and labs L4-L10.
+  architecture: {
+    title: 'Cómo encaja todo',
+    lead: 'Repaso transversal de la aplicación completa de la Práctica 2: qué ocurre desde que el usuario escribe un dato hasta que ve la respuesta, en qué orden actúa cada middleware y en qué carpeta vive cada pieza.',
+    example: 'Ejemplo: un usuario con sesión iniciada escribe el nombre de un elemento y pulsa «Añadir» (`POST /items`).',
+    lanes: { client: 'Navegador · React', net: 'Red · HTTP', server: 'Servidor · Express', db: 'Base de datos · PostgreSQL' },
+    steps: [
+      { lane: 'client', title: 'El usuario escribe', detail: 'El valor del campo vive en el estado del componente: *input* controlado con `useState`.', where: 'client/src/pages/' },
+      { lane: 'client', title: 'El componente envía la petición', detail: 'Al enviar el formulario se llama a `api.post("/items", { name })`. El interceptor de Axios añade `Authorization: Bearer <token>`.', where: 'client/src/services/api.js' },
+      { lane: 'net', title: 'La petición viaja a la API', detail: 'Del cliente (`localhost:5173`) a la API (`localhost:3000`): son orígenes distintos, así que el navegador aplica CORS.', where: '' },
+      { lane: 'server', title: 'CORS y cuerpo JSON', detail: '`cors` autoriza el origen del cliente y `express.json()` convierte el cuerpo en `req.body`.', where: 'api/src/app.js' },
+      { lane: 'server', title: 'La ruta elige la cadena', detail: '`router.post("/", requireAuth, validateItem, controller.create)`: cada eslabón llama a `next()` o responde.', where: 'api/src/routes/' },
+      { lane: 'server', title: 'Autenticación', detail: '`requireAuth` verifica el JWT y guarda su contenido en `req.user`. Sin token válido: `401` y la cadena se detiene.', where: 'api/src/middleware/auth.js' },
+      { lane: 'server', title: 'Validación', detail: 'El esquema de Zod comprueba el cuerpo. Si no es válido: `400`. Si lo es, el controlador solo recibe datos válidos.', where: 'api/src/validators/' },
+      { lane: 'server', title: 'Controlador', detail: 'Llama al modelo y decide la respuesta y su código: `201` con el elemento creado (o `403`, `404`…).', where: 'api/src/controllers/' },
+      { lane: 'server', title: 'Modelo', detail: 'Única capa que habla con los datos: ejecuta el `INSERT` parametrizado con `pg` y devuelve la fila, nunca una respuesta HTTP.', where: 'api/src/models/ · api/src/db.js' },
+      { lane: 'db', title: 'PostgreSQL', detail: 'Inserta la fila y la devuelve gracias a `RETURNING`.', where: 'api/db/migrations/' },
+      { lane: 'client', title: 'Respuesta, estado y render', detail: 'Axios entrega el JSON en `response.data`; el componente actualiza su estado y React vuelve a renderizar la lista.', where: 'client/src/pages/' },
+    ],
+    errorNote: 'Si algo falla a mitad de camino, el error salta al manejador de errores del final, que responde `500` con un mensaje genérico y registra el detalle en el servidor.',
+    middleware: [
+      { code: 'cors({ origin: process.env.CLIENT_ORIGIN })', why: 'Primero: autoriza al cliente, que está en otro origen, a leer las respuestas de la API.' },
+      { code: 'express.json()', why: 'Antes de cualquier ruta que lea `req.body`; si va después, el cuerpo llega como `undefined`.' },
+      { code: 'Rutas públicas: /auth/login, /health', why: 'No llevan autenticación: nadie tiene token antes de iniciar sesión.' },
+      { code: 'requireAuth', why: 'Antes de lo que protege. Responde `401` sin token, antes de validar o tocar la base de datos.' },
+      { code: 'Validación (Zod)', why: 'Después de autenticar y antes del controlador. Responde `400` si los datos no son válidos.' },
+      { code: 'Controlador', why: 'Recibe datos válidos y `req.user`; llama al modelo y decide el código: `200`, `201`, `204`, `403` o `404`.' },
+      { code: '404 de rutas no encontradas', why: 'Después de todas las rutas: solo se ejecuta si ninguna coincide.' },
+      { code: '(err, req, res, next)', why: 'Siempre el último: recibe los errores de todo lo anterior y responde `400` (JSON mal formado) o `500`.' },
+    ],
+    codes: [
+      ['Navegador (CORS)', 'Sin código para la aplicación: el error aparece en la consola del navegador'],
+      ['`express.json()`', '`400` si el JSON está mal formado (lo responde el manejador de errores)'],
+      ['Autenticación', '`401` sin token o con token no válido o caducado'],
+      ['Validación', '`400` si los datos no cumplen el esquema'],
+      ['Controlador', '`200`, `201` o `204` si va bien; `403` sin permiso; `404` si el recurso no existe'],
+      ['Ruta no encontrada', '`404`'],
+      ['Manejador de errores', '`500` ante un fallo inesperado'],
+    ],
+    folders: {
+      api: [
+        ['api/src/server.js', 'Arranca la API: lee la configuración y llama a `listen`'],
+        ['api/src/app.js', 'Crea la aplicación y registra los middleware y las rutas, en orden'],
+        ['api/src/routes/', 'Asocia verbo y URL con su cadena de middleware y controlador'],
+        ['api/src/middleware/', '`auth.js` (JWT) y `errors.js` (manejador de errores)'],
+        ['api/src/validators/', 'Esquemas de Zod y su middleware de validación'],
+        ['api/src/controllers/', 'Lógica de cada endpoint y código de respuesta'],
+        ['api/src/models/', 'Consultas SQL con `pg`'],
+        ['api/src/db.js', 'Conexión con PostgreSQL (`pg.Pool`)'],
+        ['api/db/migrations/', 'Creación de las tablas'],
+      ],
+      client: [
+        ['client/src/main.jsx', 'Monta React: `BrowserRouter` → `AuthProvider` → `App`'],
+        ['client/src/App.jsx', 'Navegación y rutas con React Router'],
+        ['client/src/services/api.js', 'Cliente de Axios: URL base e interceptores del token y del `401`'],
+        ['client/src/auth/AuthContext.jsx', 'Sesión compartida: `isLoggedIn`, `signIn` y `signOut`'],
+        ['client/src/components/Protected.jsx', 'Ruta protegida: redirige al login si no hay sesión'],
+        ['client/src/pages/', 'Pantallas: estado, peticiones y renderizado'],
+      ],
+    },
   },
   practices: [
     { name: 'Práctica 1', title: 'Foundations API', detail: 'API REST con operaciones CRUD y datos en memoria, con un cliente en HTML, CSS y JavaScript. Se presenta en la semana 5 y se entrega en la semana 9.' },
