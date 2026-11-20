@@ -973,52 +973,13 @@ window.PRACTICE_BANK = {
         }
       ]
     },
-    "arch": {
-      "name": "Quiz Architecture",
-      "short": "ARCH",
-      "title": "Architecture: how it all fits together",
+    "arch-api": {
+      "name": "Quiz Backend architecture",
+      "short": "API",
+      "title": "Backend architecture: layers, middleware and HTTP status codes",
       "lab": null,
-      "sessions": "cross-cutting review",
+      "sessions": "13-27",
       "questions": [
-        {
-          "id": "arch-01",
-          "type": "mc",
-          "q": "In Practice 2, which part of the application runs in the user's browser?",
-          "choices": [
-            "The Express routes and controllers",
-            "The React client: components, state and requests with Axios",
-            "The PostgreSQL queries with `pg`",
-            "Signing the JWT with `jwt.sign`"
-          ],
-          "answer": 1,
-          "why": "The browser downloads and runs the React client (`client/`). Express, `pg`, `jwt.sign` and `jwt.verify` run on the server (`api/`), in Node.js."
-        },
-        {
-          "id": "arch-02",
-          "type": "mc",
-          "q": "Where does `jwt.verify` run when a protected request arrives?",
-          "choices": [
-            "In the Axios interceptor, before the request is sent",
-            "In PostgreSQL, when querying the `users` table",
-            "On the server, inside the authentication middleware",
-            "In `AuthContext`, when reading the token from `localStorage`"
-          ],
-          "answer": 2,
-          "why": "Only the server knows `JWT_SECRET`, so only the server can check the signature. The client stores and sends the token, but does not verify it."
-        },
-        {
-          "id": "arch-03",
-          "type": "mc",
-          "q": "A user types the name of an item and clicks “Add”. What is the correct flow?",
-          "choices": [
-            "React state → Axios (`POST`) → Express route → middleware → controller → model with `pg` → PostgreSQL → response → state → render",
-            "React state → model with `pg` → PostgreSQL → render, without going through Express",
-            "Express route → React state → Axios → PostgreSQL → controller",
-            "Axios → PostgreSQL → Express → React, because the database responds first"
-          ],
-          "answer": 0,
-          "why": "The client never talks to the database: it sends an HTTP request to the API, the API passes it through its chain down to the model, which queries PostgreSQL, and the response returns to the client, which updates the state so that React re-renders."
-        },
         {
           "id": "arch-04",
           "type": "mc",
@@ -1124,6 +1085,67 @@ window.PRACTICE_BANK = {
           "why": "The error reaches the error handler, which logs it on the server and responds with `500` without internal details. Sending stack traces or queries to the browser is a security risk."
         },
         {
+          "id": "arch-18",
+          "type": "mc",
+          "q": "What is the advantage of splitting the API into routes, controllers and models?",
+          "choices": [
+            "The API uses less memory",
+            "Middleware can be dispensed with",
+            "Each layer has one responsibility: changing the storage only requires rewriting the models",
+            "The client can call the models directly"
+          ],
+          "answer": 2,
+          "why": "Routes map a URL to a controller; the controller decides the response; the model talks to the data. This is how the in-memory array of L5 was replaced by PostgreSQL in L6 without touching routes or controllers."
+        }
+      ]
+    },
+    "arch": {
+      "name": "Quiz Client-server architecture",
+      "short": "ARCH",
+      "title": "Client-server architecture: how it all fits together",
+      "lab": null,
+      "sessions": "cross-cutting review",
+      "questions": [
+        {
+          "id": "arch-01",
+          "type": "mc",
+          "q": "In Practice 2, which part of the application runs in the user's browser?",
+          "choices": [
+            "The Express routes and controllers",
+            "The React client: components, state and requests with Axios",
+            "The PostgreSQL queries with `pg`",
+            "Signing the JWT with `jwt.sign`"
+          ],
+          "answer": 1,
+          "why": "The browser downloads and runs the React client (`client/`). Express, `pg`, `jwt.sign` and `jwt.verify` run on the server (`api/`), in Node.js."
+        },
+        {
+          "id": "arch-02",
+          "type": "mc",
+          "q": "Where does `jwt.verify` run when a protected request arrives?",
+          "choices": [
+            "In the Axios interceptor, before the request is sent",
+            "In PostgreSQL, when querying the `users` table",
+            "On the server, inside the authentication middleware",
+            "In `AuthContext`, when reading the token from `localStorage`"
+          ],
+          "answer": 2,
+          "why": "Only the server knows `JWT_SECRET`, so only the server can check the signature. The client stores and sends the token, but does not verify it."
+        },
+        {
+          "id": "arch-03",
+          "type": "mc",
+          "q": "A user types the name of an item and clicks “Add”. What is the correct flow?",
+          "choices": [
+            "React state → Axios (`POST`) → Express route → middleware → controller → model with `pg` → PostgreSQL → response → state → render",
+            "React state → model with `pg` → PostgreSQL → render, without going through Express",
+            "Express route → React state → Axios → PostgreSQL → controller",
+            "Axios → PostgreSQL → Express → React, because the database responds first"
+          ],
+          "answer": 0,
+          "why": "The client never talks to the database: it sends an HTTP request to the API, the API passes it through its chain down to the model, which queries PostgreSQL, and the response returns to the client, which updates the state so that React re-renders."
+        },
+        {
           "id": "arch-12",
           "type": "mc",
           "q": "Why is a form validated on the client and also on the server?",
@@ -1200,19 +1222,6 @@ window.PRACTICE_BANK = {
           ],
           "answer": 0,
           "why": "CORS is enforced by the browser, not by the server. The API may have responded correctly; it is the browser that prevents the client code from reading the response."
-        },
-        {
-          "id": "arch-18",
-          "type": "mc",
-          "q": "What is the advantage of splitting the API into routes, controllers and models?",
-          "choices": [
-            "The API uses less memory",
-            "Middleware can be dispensed with",
-            "Each layer has one responsibility: changing the storage only requires rewriting the models",
-            "The client can call the models directly"
-          ],
-          "answer": 2,
-          "why": "Routes map a URL to a controller; the controller decides the response; the model talks to the data. This is how the in-memory array of L5 was replaced by PostgreSQL in L6 without touching routes or controllers."
         },
         {
           "id": "arch-19",

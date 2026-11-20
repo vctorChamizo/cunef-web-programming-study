@@ -474,21 +474,22 @@
       ${C.architecture ? `${sectionHead('Repaso transversal')}
       <div class="grid-2">
         <a class="card" href="#/arquitectura">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('layers')}</span></div><h3>${esc(C.architecture.title)}</h3><p>El recorrido completo de una petición, el orden de los middleware y la carpeta de la Práctica 2 donde vive cada pieza.</p></a>
-        ${Q.arch ? `<a class="card" href="#/quiz/arch">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('check-square')}</span></div><h3>${esc(quizName('arch'))}</h3><p>${plural(Q.arch.questions.length, 'pregunta', 'preguntas')} sobre cómo encajan cliente, API y base de datos.</p></a>` : ''}
-      </div>` : ''}
+      </div>
+      ${ARCH_QUIZZES.length ? `<div class="grid-2" style="margin-top:16px">${ARCH_QUIZZES.map((k) => `<a class="card" href="#/quiz/${k}">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('check-square')}</span><span class="chip plain">${plural(Q[k].questions.length, 'pregunta', 'preguntas')}</span></div><h3>${esc(quizName(k))}</h3><p>${esc(Q[k].title)}</p></a>`).join('')}</div>` : ''}` : ''}
       ${sectionHead('Prácticas')}
       <div class="grid-2">${C.practices.map((x) => `<div class="card"><div class="card-top"><span class="icon-tile">${icon('code')}</span><span class="chip plain">${esc(x.name)}</span></div><h3>${esc(x.title)}</h3><p>${esc(x.detail)}</p></div>`).join('')}</div>
       <p class="muted" style="margin-top:14px;font-size:.88rem">Los enunciados de las prácticas, las presentaciones de cada semana y las entregas están en Canvas.</p>`, 'Mapa del curso');
   }
 
   // ---------- How it all fits together ----------
+  const ARCH_QUIZZES = ['arch-api', 'arch'].filter((k) => Q[k]);
   function architecturePage() {
     const A = C.architecture;
     if (!A) return notFound();
     const laneCls = { client: 'b3', net: 'muted', server: 'b2', db: 'b1' };
     render(`
       ${pageHead({ path: [[A.title, '']], eyebrow: 'Repaso transversal', title: esc(A.title), lead: inline(A.lead),
-        meta: Q.arch ? `<a class="chip accent" href="#/quiz/arch" style="text-decoration:none">${icon('check-square')}${esc(quizName('arch'))} · ${plural(Q.arch.questions.length, 'pregunta', 'preguntas')}</a>` : '' })}
+        meta: ARCH_QUIZZES.map((k) => `<a class="chip accent" href="#/quiz/${k}" style="text-decoration:none">${icon('check-square')}${esc(quizName(k))} · ${plural(Q[k].questions.length, 'pregunta', 'preguntas')}</a>`).join('') })}
       ${sectionHead('El recorrido de una petición')}
       <p class="muted" style="margin:-4px 0 12px">${inline(A.example)}</p>
       <ol class="flow" aria-label="Recorrido de una petición, paso a paso">${A.steps.map((st, i) => `<li class="flow-step lane-${st.lane}" style="--lc:var(--${laneCls[st.lane]}, var(--text-3))">
@@ -501,7 +502,7 @@
       <div class="table-wrap"><table><thead><tr><th>Capa</th><th>Código</th></tr></thead><tbody>${A.codes.map(([a, b]) => `<tr><td>${inline(a)}</td><td>${inline(b)}</td></tr>`).join('')}</tbody></table></div>
       ${sectionHead('Dónde vive cada pieza en la Práctica 2')}
       <div class="grid-2">${[['api', 'api/ · Express y PostgreSQL'], ['client', 'client/ · React, Axios y AuthContext']].map(([k, t]) => `<div class="card"><h3>${esc(t)}</h3><dl class="folders">${A.folders[k].map(([f, d]) => `<dt><code>${esc(f)}</code></dt><dd>${inline(d)}</dd>`).join('')}</dl></div>`).join('')}</div>
-      <div class="card-foot" style="margin-top:20px;gap:10px">${Q.arch ? `<a class="btn" href="#/quiz/arch">${icon('play')}Hacer el ${esc(quizName('arch'))}</a>` : ''}${G.II ? '<a class="btn secondary" href="#/guia/II">Guía del bloque II</a>' : ''}${G.III ? '<a class="btn secondary" href="#/guia/III">Guía del bloque III</a>' : ''}</div>`, A.title);
+      <div class="card-foot" style="margin-top:20px;gap:10px">${ARCH_QUIZZES.map((k, i) => `<a class="btn${i ? ' secondary' : ''}" href="#/quiz/${k}">${icon('play')}Hacer el ${esc(quizName(k))}</a>`).join('')}${G.II ? '<a class="btn secondary" href="#/guia/II">Guía del bloque II</a>' : ''}${G.III ? '<a class="btn secondary" href="#/guia/III">Guía del bloque III</a>' : ''}</div>`, A.title);
   }
 
   // ---------- Guide ----------
@@ -1421,6 +1422,7 @@
 
   // ---------- Router ----------
   let currentKey = 'home', currentGuide = null;
+  let syncLang = () => {};
   function navigate(href, replace = false) {
     const path = toPath(href);
     if (path !== location.pathname + location.search) history[replace ? 'replaceState' : 'pushState'](null, '', path);
@@ -1435,19 +1437,32 @@
   fixLinks(document.body);
   new MutationObserver((muts) => muts.forEach((m) => m.addedNodes.forEach((n) => { fixLinks(n); translateTree(n); }))).observe(document.body, { childList: true, subtree: true });
   translateTree(document.body);
-  // Language switch: ES <-> EN on the same page, remembered in this browser.
-  const langBtn = $('#lang-btn');
-  if (langBtn) {
-    const other = LANG === 'en' ? 'es' : 'en';
-    langBtn.textContent = other.toUpperCase();
-    langBtn.setAttribute('aria-label', other === 'en' ? 'Read in English' : 'Leer en castellano');
-    langBtn.setAttribute('title', other === 'en' ? 'English' : 'Castellano');
-    langBtn.setAttribute('data-no-tr', '');
-    langBtn.addEventListener('click', () => {
-      try { localStorage.setItem('g247-lang', other); } catch { /* storage unavailable */ }
-      let raw = location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : '';
-      if (/^en(\/|$)/.test(raw)) raw = raw.slice(3);
-      location.assign(BASE + (other === 'en' ? 'en/' : '') + raw + location.hash);
+  // Language switch (ES | EN): each option links to the same page in the other language. The
+  // change goes straight to index.html (no 404.html hop), keeps the scroll position and, where the
+  // browser supports it, crossfades with a view transition.
+  const langSwitch = $('#lang-switch');
+  const routeRaw = () => { let raw = location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : ''; if (/^en(\/|$)/.test(raw)) raw = raw.slice(3); return raw; };
+  syncLang = () => {
+    if (!langSwitch) return;
+    $$('[data-lang-switch]', langSwitch).forEach((a) => {
+      const l = a.dataset.langSwitch, on = l === LANG;
+      a.href = BASE + (l === 'en' ? 'en/' : '') + routeRaw();
+      a.classList.toggle('active', on);
+      if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
+    });
+  };
+  if (langSwitch) {
+    langSwitch.addEventListener('click', (e) => {
+      const a = e.target.closest('[data-lang-switch]');
+      if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return;
+      e.preventDefault();
+      const to = a.dataset.langSwitch;
+      if (to === LANG) return;
+      const target = (to === 'en' ? 'en/' : '') + routeRaw();
+      try { localStorage.setItem('g247-lang', to); sessionStorage.setItem('g247-switch', JSON.stringify({ path: routeRaw(), y: Math.round(window.scrollY) })); } catch { /* storage unavailable */ }
+      const go = () => location.assign(BASE + '?p=' + encodeURIComponent(target) + location.hash);
+      if ('onpagereveal' in window) go(); // cross-document view transition (CSS @view-transition)
+      else { document.documentElement.classList.add('lang-leaving'); setTimeout(go, 140); }
     });
   }
   // Internal links navigate without reloading; "#id" links scroll within the page.
@@ -1467,6 +1482,7 @@
     navigate(url.pathname + url.search);
   });
   function route() {
+    syncLang();
     let raw = location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : '';
     if (/^en(\/|$)/.test(raw)) raw = raw.slice(3);
     const parts = raw.split('/').filter(Boolean);
@@ -1523,6 +1539,12 @@
   }
   window.addEventListener('pagehide', () => save(true));
   route();
+  try {
+    const sw = JSON.parse(sessionStorage.getItem('g247-switch') || 'null');
+    sessionStorage.removeItem('g247-switch');
+    if (sw && sw.path === routeRaw() && sw.y) { window.scrollTo(0, sw.y); requestAnimationFrame(() => window.scrollTo(0, sw.y)); }
+    setTimeout(() => document.documentElement.classList.remove('lang-arriving'), 400);
+  } catch { /* storage unavailable */ }
 
   // Offline support: network first, cache as fallback (see sw.js).
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {

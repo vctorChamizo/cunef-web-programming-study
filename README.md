@@ -47,8 +47,9 @@ disk and on GitHub Pages.
 - **Practical exercises**: 21 short exercises, at least six per block, (fix, complete, connect, explain) with two progressive
   hints, the reference solution on request and a rubric for self-assessment out of 10.
 - **How it all fits together** (`/arquitectura`): the full path of a request from the React input to
-  PostgreSQL and back, the order of the Express middleware and the Practice 2 folders, with an
-  architecture quiz (`arch`, 20 questions). Content in `course.js` (`architecture`).
+  PostgreSQL and back, the order of the Express middleware and the Practice 2 folders, with two
+  architecture quizzes: backend (`arch-api`, 9 questions, block II) and client-server (`arch`,
+  11 questions, block III). Content in `course.js` (`architecture`).
 - **Error review**: every failed question is kept until it is answered correctly anywhere.
 - **Search** (`Ctrl K`, `⌘ K` or `/`) across guide sections, questions, sessions, labs and docs.
 - **Progress** page, light and dark themes, mobile layout, offline support.

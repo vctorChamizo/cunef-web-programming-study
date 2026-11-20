@@ -4,7 +4,7 @@
 // - fixes: register corrections (formal, impersonal) applied to questions of the generated quizzes.
 // - add: questions appended to the generated quizzes, by quiz. They include every question of the
 //   practice exams, so that every practice exam is built only from quiz questions.
-// - quizzes: the quizzes without a lab (DOM, Context API, architecture).
+// - quizzes: the quizzes without a lab (DOM, Context API, backend architecture, client-server architecture).
 // - SIMULACROS: each practice exam = 8 multiple-choice questions taken from the quizzes (by id) and
 //   3 practical exercises taken from exercises.js (by id), as in the final exam (4 + 6 points).
 // Origin of the questions: ids without "mx" or "ctx" come from the coordinator's study-site bank
@@ -970,52 +970,13 @@ window.PRACTICE_BANK = {
         }
       ]
     },
-    "arch": {
-      "name": "Quiz Arquitectura",
-      "short": "ARQ",
-      "title": "Arquitectura: cómo encaja todo",
+    "arch-api": {
+      "name": "Quiz Arquitectura del backend",
+      "short": "API",
+      "title": "Arquitectura del backend: capas, middleware y códigos HTTP",
       "lab": null,
-      "sessions": "repaso transversal",
+      "sessions": "13-27",
       "questions": [
-        {
-          "id": "arch-01",
-          "type": "mc",
-          "q": "En la Práctica 2, ¿qué parte de la aplicación se ejecuta en el navegador del usuario?",
-          "choices": [
-            "Las rutas y los controladores de Express",
-            "El cliente de React: componentes, estado y peticiones con Axios",
-            "Las consultas a PostgreSQL con `pg`",
-            "La firma del JWT con `jwt.sign`"
-          ],
-          "answer": 1,
-          "why": "El navegador descarga y ejecuta el cliente de React (`client/`). Express, `pg`, `jwt.sign` y `jwt.verify` se ejecutan en el servidor (`api/`), en Node.js."
-        },
-        {
-          "id": "arch-02",
-          "type": "mc",
-          "q": "¿Dónde se ejecuta `jwt.verify` cuando llega una petición protegida?",
-          "choices": [
-            "En el interceptor de Axios, antes de enviar la petición",
-            "En PostgreSQL, al consultar la tabla `users`",
-            "En el servidor, dentro del middleware de autenticación",
-            "En `AuthContext`, al leer el token de `localStorage`"
-          ],
-          "answer": 2,
-          "why": "Solo el servidor conoce `JWT_SECRET`, así que solo él puede comprobar la firma. El cliente guarda y envía el token, pero no lo verifica."
-        },
-        {
-          "id": "arch-03",
-          "type": "mc",
-          "q": "Un usuario escribe el nombre de un elemento y pulsa «Añadir». ¿Cuál es el recorrido correcto?",
-          "choices": [
-            "Estado de React → Axios (`POST`) → ruta de Express → middleware → controlador → modelo con `pg` → PostgreSQL → respuesta → estado → render",
-            "Estado de React → modelo con `pg` → PostgreSQL → render, sin pasar por Express",
-            "Ruta de Express → estado de React → Axios → PostgreSQL → controlador",
-            "Axios → PostgreSQL → Express → React, porque la base de datos responde primero"
-          ],
-          "answer": 0,
-          "why": "El cliente nunca habla con la base de datos: envía una petición HTTP a la API, la API atraviesa su cadena hasta el modelo, que consulta PostgreSQL, y la respuesta vuelve al cliente, que actualiza el estado y React vuelve a renderizar."
-        },
         {
           "id": "arch-04",
           "type": "mc",
@@ -1121,6 +1082,67 @@ window.PRACTICE_BANK = {
           "why": "El error llega al manejador de errores, que lo registra en el servidor y responde `500` sin detalles internos. Enviar trazas o consultas al navegador es un riesgo de seguridad."
         },
         {
+          "id": "arch-18",
+          "type": "mc",
+          "q": "¿Qué ventaja tiene separar la API en rutas, controladores y modelos?",
+          "choices": [
+            "Que la API ocupa menos memoria",
+            "Que se puede prescindir de los middleware",
+            "Que cada capa tiene una responsabilidad: cambiar el almacenamiento solo obliga a reescribir los modelos",
+            "Que el cliente puede llamar directamente a los modelos"
+          ],
+          "answer": 2,
+          "why": "Las rutas asocian URL y controlador; el controlador decide la respuesta; el modelo habla con los datos. Así se pasó del array en memoria de L5 a PostgreSQL en L6 sin tocar rutas ni controladores."
+        }
+      ]
+    },
+    "arch": {
+      "name": "Quiz Arquitectura cliente-servidor",
+      "short": "ARQ",
+      "title": "Arquitectura cliente-servidor: cómo encaja todo",
+      "lab": null,
+      "sessions": "repaso transversal",
+      "questions": [
+        {
+          "id": "arch-01",
+          "type": "mc",
+          "q": "En la Práctica 2, ¿qué parte de la aplicación se ejecuta en el navegador del usuario?",
+          "choices": [
+            "Las rutas y los controladores de Express",
+            "El cliente de React: componentes, estado y peticiones con Axios",
+            "Las consultas a PostgreSQL con `pg`",
+            "La firma del JWT con `jwt.sign`"
+          ],
+          "answer": 1,
+          "why": "El navegador descarga y ejecuta el cliente de React (`client/`). Express, `pg`, `jwt.sign` y `jwt.verify` se ejecutan en el servidor (`api/`), en Node.js."
+        },
+        {
+          "id": "arch-02",
+          "type": "mc",
+          "q": "¿Dónde se ejecuta `jwt.verify` cuando llega una petición protegida?",
+          "choices": [
+            "En el interceptor de Axios, antes de enviar la petición",
+            "En PostgreSQL, al consultar la tabla `users`",
+            "En el servidor, dentro del middleware de autenticación",
+            "En `AuthContext`, al leer el token de `localStorage`"
+          ],
+          "answer": 2,
+          "why": "Solo el servidor conoce `JWT_SECRET`, así que solo él puede comprobar la firma. El cliente guarda y envía el token, pero no lo verifica."
+        },
+        {
+          "id": "arch-03",
+          "type": "mc",
+          "q": "Un usuario escribe el nombre de un elemento y pulsa «Añadir». ¿Cuál es el recorrido correcto?",
+          "choices": [
+            "Estado de React → Axios (`POST`) → ruta de Express → middleware → controlador → modelo con `pg` → PostgreSQL → respuesta → estado → render",
+            "Estado de React → modelo con `pg` → PostgreSQL → render, sin pasar por Express",
+            "Ruta de Express → estado de React → Axios → PostgreSQL → controlador",
+            "Axios → PostgreSQL → Express → React, porque la base de datos responde primero"
+          ],
+          "answer": 0,
+          "why": "El cliente nunca habla con la base de datos: envía una petición HTTP a la API, la API atraviesa su cadena hasta el modelo, que consulta PostgreSQL, y la respuesta vuelve al cliente, que actualiza el estado y React vuelve a renderizar."
+        },
+        {
           "id": "arch-12",
           "type": "mc",
           "q": "¿Por qué un formulario se valida en el cliente y también en el servidor?",
@@ -1197,19 +1219,6 @@ window.PRACTICE_BANK = {
           ],
           "answer": 0,
           "why": "CORS lo aplica el navegador, no el servidor. La API puede haber respondido bien; es el navegador quien impide que el código del cliente lea la respuesta."
-        },
-        {
-          "id": "arch-18",
-          "type": "mc",
-          "q": "¿Qué ventaja tiene separar la API en rutas, controladores y modelos?",
-          "choices": [
-            "Que la API ocupa menos memoria",
-            "Que se puede prescindir de los middleware",
-            "Que cada capa tiene una responsabilidad: cambiar el almacenamiento solo obliga a reescribir los modelos",
-            "Que el cliente puede llamar directamente a los modelos"
-          ],
-          "answer": 2,
-          "why": "Las rutas asocian URL y controlador; el controlador decide la respuesta; el modelo habla con los datos. Así se pasó del array en memoria de L5 a PostgreSQL en L6 sin tocar rutas ni controladores."
         },
         {
           "id": "arch-19",

@@ -4,10 +4,13 @@
   <meta charset="utf-8">
   <title>G247</title>
   <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="light dark">
+  <style>html { background: #f6f7f9; } @media (prefers-color-scheme: dark) { html { background: #0b1017; } }</style>
   <script>
     // GitHub Pages serves this page for any path that is not a file (e.g. /<repo>/quiz/1).
     // It sends the browser to the app with the path in ?p=, and the app restores the clean URL.
     (function () {
+      try { var t = localStorage.getItem('g247-theme'); if (t === 'dark' || t === 'light') document.documentElement.style.background = t === 'dark' ? '#0b1017' : '#f6f7f9'; } catch (e) {}
       var l = window.location;
       var base = /\.github\.io$/.test(l.hostname) ? '/' + l.pathname.split('/')[1] + '/' : '/';
       var path = l.pathname.indexOf(base) === 0 ? l.pathname.slice(base.length) : l.pathname.replace(/^\//, '');

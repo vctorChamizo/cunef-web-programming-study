@@ -47,7 +47,7 @@ window.COURSE = {
     },
     {
       id: 2, roman: 'II', title: 'Backend', subtitle: 'Node.js, Express, PostgreSQL y autenticación', weeks: 'Semanas 5 a 9',
-      guide: 'II', quizzes: [4, 5, 6, 7],
+      guide: 'II', quizzes: [4, 5, 6, 7, 'arch-api'],
       notes: ['La base de datos del curso, y la del examen, es PostgreSQL: SQL desde Node.js con el paquete pg.'], // [V-214, V-276]
       weekList: [
         { n: 5, title: 'Node.js y Express',

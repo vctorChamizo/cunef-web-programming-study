@@ -314,8 +314,23 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .continue-card .s { font-size: 0.85rem; color: var(--text-3); }
 
 /* ---------- Language switch ---------- */
-.lang-btn { height: 36px; min-width: 40px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: 700 0.78rem/1 inherit; letter-spacing: 0.06em; cursor: pointer; }
-.lang-btn:hover { border-color: var(--accent-line); color: var(--accent); }
+.lang-switch { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.lang-switch a { display: grid; place-items: center; min-width: 32px; height: 28px; padding: 0 8px; border-radius: 7px; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.06em; line-height: 1; color: var(--text-3); text-decoration: none; transition: background .15s, color .15s; }
+.lang-switch a:hover { color: var(--text); background: var(--surface-2); }
+.lang-switch a.active { background: var(--accent-soft); color: var(--accent); }
+.lang-switch a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .2s; animation-timing-function: ease; }
+.topbar { view-transition-name: topbar; }
+.sidebar { view-transition-name: sidebar; }
+html.lang-leaving #main, html.lang-leaving .sidebar { opacity: 0; transition: opacity .14s ease; }
+html.lang-arriving #main { animation: lang-in .22s ease both; }
+@keyframes lang-in { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 400px) { .brand-text { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root), ::view-transition-group(*) { animation: none; }
+  html.lang-arriving #main { animation: none; }
+}
 
 /* ---------- How it all fits together ---------- */
 .flow { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 0; }
