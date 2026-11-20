@@ -6,7 +6,7 @@
 //   practice exams, so that every practice exam is built only from quiz questions.
 // - quizzes: the quizzes without a lab (DOM, Context API, backend architecture, client-server architecture).
 // - SIMULACROS: each practice exam = 8 multiple-choice questions taken from the quizzes (by id) and
-//   3 practical exercises taken from exercises.js (by id), as in the final exam (4 + 6 points).
+//   a 6-point practical part from exercises.js (by id): 3 code exercises and 1 conceptual question.
 // Origin of the questions: ids without "mx" or "ctx" come from the coordinator's study-site bank
 // (Spanish version); "mx" and "ctx" ids were written for this site.
 'use strict';
@@ -1279,7 +1279,8 @@ window.SIMULACROS = [
     "practical": [
       "A1",
       "A4",
-      "A2"
+      "A2",
+      "E5"
     ]
   },
   {
@@ -1297,7 +1298,8 @@ window.SIMULACROS = [
     "practical": [
       "B1",
       "B3",
-      "B2"
+      "B2",
+      "E4"
     ]
   },
   {
@@ -1315,7 +1317,8 @@ window.SIMULACROS = [
     "practical": [
       "D2",
       "C3",
-      "A3"
+      "A3",
+      "E8"
     ]
   },
   {
@@ -1333,7 +1336,8 @@ window.SIMULACROS = [
     "practical": [
       "B4",
       "B5",
-      "B6"
+      "B6",
+      "E1"
     ]
   },
   {
@@ -1351,7 +1355,8 @@ window.SIMULACROS = [
     "practical": [
       "A5",
       "B7",
-      "B8"
+      "B8",
+      "E6"
     ]
   },
   {
@@ -1369,7 +1374,8 @@ window.SIMULACROS = [
     "practical": [
       "B9",
       "A6",
-      "A7"
+      "A7",
+      "E9"
     ]
   }
 ];

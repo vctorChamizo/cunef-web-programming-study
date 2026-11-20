@@ -44,7 +44,8 @@ disk and on GitHub Pages.
 - **Practice exams**: six fixed ones and a random one, each with 8 quiz questions (4 points) and
   3 practical exercises (6 points), question navigator, indicative timer, automatic grading of the
   test and rubric-based self-assessment of the practical part, for an indicative grade out of 10.
-- **Practical exercises**: 21 short exercises, at least six per block, (fix, complete, connect, explain) with two progressive
+- **Practical exercises**: 21 code exercises (fix, complete, connect, explain) and 9 conceptual
+  questions (E1-E9, three per block), with two progressive
   hints, the reference solution on request and a rubric for self-assessment out of 10.
 - **How it all fits together** (`/arquitectura`): the full path of a request from the React input to
   PostgreSQL and back, the order of the Express middleware and the Practice 2 folders, with two
@@ -100,8 +101,8 @@ equivalent converter (same header ids and `sourceCode` blocks). When the content
 
 `site/data/exercises.js` and `site/data/practice-bank.js` are hand-written here as well. Every
 practice exam is built only from quiz questions (8, by id, 3/2/3 by block) and practical exercises
-(3, by id), as listed in `SIMULACROS`. Each practice exam has at least two architecture questions
-and one exercise with a conceptual part (`conceptual: true`); the `EXAMS` of the generated `quizzes.js` are no longer used.
+(3, by id), as listed in `SIMULACROS`. Each practice exam has at least two architecture questions,
+and its 6-point practical part is 3 code exercises and 1 conceptual question (1.5 points each); the `EXAMS` of the generated `quizzes.js` are no longer used.
 The review pack in `cunef/01-asignaturas/03-evaluacion/examenes/revision-coordinador/` is exported
 from these files.
 

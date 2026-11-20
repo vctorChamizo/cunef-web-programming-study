@@ -1270,7 +1270,8 @@ window.SIMULACROS = [
     "practical": [
       "A1",
       "A4",
-      "A2"
+      "A2",
+      "E5"
     ]
   },
   {
@@ -1288,7 +1289,8 @@ window.SIMULACROS = [
     "practical": [
       "B1",
       "B3",
-      "B2"
+      "B2",
+      "E4"
     ]
   },
   {
@@ -1306,7 +1308,8 @@ window.SIMULACROS = [
     "practical": [
       "D2",
       "C3",
-      "A3"
+      "A3",
+      "E8"
     ]
   },
   {
@@ -1324,7 +1327,8 @@ window.SIMULACROS = [
     "practical": [
       "B4",
       "B5",
-      "B6"
+      "B6",
+      "E1"
     ]
   },
   {
@@ -1342,7 +1346,8 @@ window.SIMULACROS = [
     "practical": [
       "A5",
       "B7",
-      "B8"
+      "B8",
+      "E6"
     ]
   },
   {
@@ -1360,7 +1365,8 @@ window.SIMULACROS = [
     "practical": [
       "B9",
       "A6",
-      "A7"
+      "A7",
+      "E9"
     ]
   }
 ];

@@ -25,6 +25,7 @@
   const LANG = window.LANG === 'en' ? 'en' : 'es';
   const PREFIX = LANG === 'en' ? 'en/' : '';
   const LOCALE = LANG === 'en' ? 'en-GB' : 'es-ES';
+  { const ic = document.querySelector('link[rel="icon"]'); if (ic) ic.href = BASE + 'assets/icon.svg'; }
   const toPath = (href) => (href.startsWith('#/') ? BASE + PREFIX + href.slice(2) : href);
   // English interface: whole texts first, then the rules for texts built with numbers (i18n-en.js).
   const I18N = LANG === 'en' ? window.I18N_EN : null;
@@ -393,7 +394,7 @@
         <a class="card" href="#/guia/I">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('book')}</span></div><h3>Guías teóricas</h3><p>Explicaciones completas de ${listRomans(BLOCKS.filter((b) => b.guide && G[b.guide]))}, con ejemplos de clase y errores habituales.</p></a>
         <a class="card" href="#/quizzes">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('check-square')}</span></div><h3>Quizzes</h3><p>${quizKeys.length} quizzes, uno por laboratorio, con la explicación de cada respuesta.</p></a>
         ${X.length ? `<a class="card" href="#/ejercicios">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('code')}</span></div><h3>Ejercicios prácticos</h3><p>${X.length} ejercicios cortos como los de la parte práctica, con pistas, solución y criterios de corrección.</p></a>` : ''}
-        <a class="card" href="#/simulacros">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('clipboard')}</span></div><h3>Simulacros</h3><p>El examen completo: 8 preguntas tipo test (4 puntos) y 3 ejercicios prácticos (6 puntos).</p></a>
+        <a class="card" href="#/simulacros">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('clipboard')}</span></div><h3>Simulacros</h3><p>El examen completo: 8 preguntas tipo test (4 puntos) y una parte práctica de 6 puntos, con 3 ejercicios de código y 1 pregunta conceptual.</p></a>
         <a class="card" href="#/recursos">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('link')}</span></div><h3>Laboratorios</h3><p>Enunciados y soluciones: repetirlos sin mirar la solución es la mejor preparación para la parte práctica.</p></a>
         <a class="card" href="#/repaso">${icon('arrow-right', 'go')}<div class="card-top"><span class="icon-tile">${icon('rotate')}</span>${wrong ? `<span class="badge">${wrong}</span>` : ''}</div><h3>Repaso de errores</h3><p>Las preguntas falladas se guardan aquí hasta que se responden bien.</p></a>
       </div>`, '');
@@ -883,15 +884,18 @@
     render(`
       ${pageHead({ path: [['Simulacros', '']], eyebrow: 'Practicar', title: 'Simulacros del examen',
         lead: HAS_PRACTICAL
-        ? 'Cada simulacro reproduce el examen final: una parte tipo test de 8 preguntas (4 puntos, sin penalización por error), que se corrige sola, y una parte práctica de ejercicios de programación (6 puntos), que se autoevalúa con la solución de referencia y sus criterios de corrección.'
+        ? 'Cada simulacro reproduce el examen final: una parte tipo test de 8 preguntas (4 puntos, sin penalización por error), que se corrige sola, y una parte práctica de 6 puntos, con tres ejercicios de código y una pregunta conceptual, que se autoevalúa con la solución de referencia y sus criterios de corrección.'
         : 'Cada simulacro reproduce la parte tipo test del examen final: 8 preguntas de los tres bloques, 0,5 puntos cada una y sin penalización por error. Se responde todo y se corrige al final.',
         meta: `<span class="chip plain">${icon('award')}Tipo test: 4 puntos</span>${HAS_PRACTICAL ? `<span class="chip plain">${icon('code')}Parte práctica: 6 puntos</span>` : ''}<span class="chip plain">${icon('clock')}Con cronómetro orientativo</span>` })}
       <div class="grid">${E.map(examCard).join('')}${randomExamCard()}</div>`, 'Simulacros');
   }
 
+  const isConceptual = (x) => /^(Pregunta conceptual|Conceptual question)$/.test(x?.category || x?.ex?.category || '');
+  // The reference answer of a conceptual question is prose; the rest are code.
+  const modelAnswer = (x) => (isConceptual(x) ? `<div class="prose-sm model-answer">${mdBlock(x.solution.code)}</div>` : `<pre><code>${esc(x.solution.code)}</code></pre>`);
   // An exercise (exercises.js format) becomes a practical item of a practice exam, worth `points`.
   function toPractical(ex, points = 2) {
-    const edit = ex.files.find((f) => f.name === ex.edit) || ex.files[ex.files.length - 1];
+    const edit = ex.files.find((f) => f.name === ex.edit) || ex.files[ex.files.length - 1] || { name: '', code: '' };
     return {
       id: ex.id, kind: ex.kind, title: ex.title, points, ex,
       starter: ex.answerStarter ?? edit.code,
@@ -901,15 +905,20 @@
   for (const x of E) {
     const src = x.practical;
     if (!src) continue;
-    x.practical = src.map((it) => (typeof it === 'string' ? (XB[it] ? toPractical(XB[it]) : null) : it.files ? toPractical(it) : it)).filter(Boolean);
+    const pts = 6 / src.length;
+    x.practical = src.map((it) => (typeof it === 'string' ? (XB[it] ? toPractical(XB[it], pts) : null) : it.files ? toPractical(it, pts) : it)).filter(Boolean);
   }
   // Practical exercises (EXAMS[i].practical): one of each kind in the random practice exam.
   const PRACTICAL = E.flatMap((x) => (x.practical || []).map((p) => ({ ...p, exam: x.n })));
   const PI = Object.fromEntries(PRACTICAL.map((p) => [p.id, p]));
   const HAS_PRACTICAL = PRACTICAL.length > 0;
+  // Random practice exam: one code exercise of each kind and one conceptual question.
   function randomPracticalIds() {
-    const kinds = [...new Set(PRACTICAL.map((p) => p.kind || p.id))];
-    return kinds.map((k) => shuffle(PRACTICAL.filter((p) => (p.kind || p.id) === k))[0].id);
+    const code = PRACTICAL.filter((p) => !isConceptual(p)), concept = PRACTICAL.filter(isConceptual);
+    const kinds = [...new Set(code.map((p) => p.kind || p.id))];
+    const ids = kinds.map((k) => shuffle(code.filter((p) => (p.kind || p.id) === k))[0].id);
+    if (concept.length) ids.push(shuffle(concept)[0].id);
+    return [...new Set(ids)];
   }
   const rubricItems = (p) => (p.rubric || []).map((r) => (typeof r === 'string' ? { text: r, points: null } : r));
   // Points of a rubric item; items without points share the rest of the exercise equally.
@@ -939,7 +948,7 @@
       cur = S.current[ck] = { ids: random ? randomExamIds() : x.questions.map((q) => q.id), picks: {}, start: Date.now() };
       save();
     }
-    if (!Array.isArray(cur.pids) || !cur.pids.every((id) => PI[id])) cur.pids = random ? (HAS_PRACTICAL ? randomPracticalIds() : []) : (x.practical || []).map((p) => p.id);
+    if (!Array.isArray(cur.pids) || !cur.pids.every((id) => PI[id]) || (random && HAS_PRACTICAL && !cur.pids.some((id) => isConceptual(PI[id])) && PRACTICAL.some(isConceptual))) cur.pids = random ? (HAS_PRACTICAL ? randomPracticalIds() : []) : (x.practical || []).map((p) => p.id);
     cur.code = cur.code || {};
     const qs = cur.ids.map((id) => QI[id].q);
     const ps = cur.pids.map((id) => PI[id]);
@@ -948,7 +957,7 @@
     setLast(`#/simulacro/${key}`, name, ps.length ? 'Simulacro completo del examen' : 'Parte tipo test del examen');
     const head = pageHead({ path: [['Simulacros', '#/simulacros'], [name, '']], eyebrow: ps.length ? 'Simulacro · examen completo' : 'Simulacro · parte tipo test', title: name,
       lead: ps.length
-        ? `Parte tipo test: ${qs.length} preguntas de 0,5 puntos, sin penalización. Parte práctica: ${plural(ps.length, 'ejercicio', 'ejercicios')}, ${fmtPts(pTotal)} puntos. Al corregir se muestra la solución de referencia de cada ejercicio para autoevaluarlo.`
+        ? `Parte tipo test: ${qs.length} preguntas de 0,5 puntos, sin penalización. Parte práctica: ${fmtPts(pTotal)} puntos, ${plural(ps.filter((p) => !isConceptual(p)).length, 'ejercicio de código', 'ejercicios de código')}${ps.some(isConceptual) ? ` y ${plural(ps.filter(isConceptual).length, 'pregunta conceptual', 'preguntas conceptuales')}` : ''}. Al corregir se muestra la solución de referencia de cada ejercicio para autoevaluarlo.`
         : `${qs.length} preguntas de opción múltiple, 0,5 puntos cada una. Las respuestas incorrectas no descuentan. La corrección se muestra al terminar.` });
     render(`${head}
       <div class="exam-layout">
@@ -1044,7 +1053,7 @@
       $$('.code-input').forEach((ta) => { ta.readOnly = true; });
       ps.forEach((p, pi) => {
         const pts = rubricPoints(p);
-        $(`#p-${pi} .pfb`).innerHTML = `<div class="feedback"><div class="fb-title">${icon('code')}Solución de referencia</div>${p.ex ? `<pre><code>${esc(p.ex.solution.code)}</code></pre><div class="prose-sm">${mdBlock(p.ex.solution.explanation)}</div>` : md(p.model)}
+        $(`#p-${pi} .pfb`).innerHTML = `<div class="feedback"><div class="fb-title">${icon('code')}Solución de referencia</div>${p.ex ? `${modelAnswer(p.ex)}<div class="prose-sm">${mdBlock(p.ex.solution.explanation)}</div>` : md(p.model)}
           ${pts.length ? `<p class="rubric-title"><strong>Criterios de corrección</strong> · marcar los que cumple la solución escrita</p>
           <ul class="rubric">${rubricItems(p).map((r, ri) => `<li><label><input type="checkbox" data-p="${pi}" data-r="${ri}"><span>${md(r.text)}</span><span class="rp">${fmtPts(pts[ri])} p.</span></label></li>`).join('')}</ul>
           <p class="pscore">Nota orientativa del ejercicio: <strong id="ps-${pi}">0</strong> de ${fmtPts(p.points || 0)}</p>` : ''}</div>`;
@@ -1112,16 +1121,16 @@
     const done = X.filter((x) => S.ex[x.id]?.score != null).length;
     render(`
       ${pageHead({ path: [['Ejercicios prácticos', '']], eyebrow: 'Practicar', title: 'Ejercicios prácticos',
-        lead: 'Ejercicios cortos como los de la parte práctica del examen: corregir un error, completar un fragmento, conectar piezas que ya existen o explicar un código. Cada uno trae dos pistas, la solución de referencia y los criterios de corrección para autoevaluarse sobre 10.',
+        lead: 'Ejercicios cortos como los de la parte práctica del examen: corregir un error, completar un fragmento, conectar piezas que ya existen o explicar un código, y preguntas conceptuales de respuesta breve sobre el porqué. Cada uno trae dos pistas, la solución de referencia y los criterios de corrección para autoevaluarse sobre 10.',
         meta: `<span class="chip plain">${done} de ${X.length} autoevaluados</span><span class="chip plain">${icon('clock')}5-15 minutos cada uno</span>` })}
       <div class="callout info">${icon('info')}<div>Se recomienda escribir la solución sin abrir las pistas y consultar la solución solo al terminar. En el examen no hay pistas.</div></div>
-      ${BLOCKS.map((b) => { const xs = X.filter((x) => KIND_BLOCK[x.kind] === b.id); return xs.length ? `${sectionHead(`<span style="color:var(--${b.color})">Bloque ${b.roman}</span> · ${esc(b.title)}`, `<span class="hint">${plural(xs.length, 'ejercicio', 'ejercicios')}</span>`)}<div class="grid">${xs.map(exerciseCard).join('')}</div>` : ''; }).join('')}`, 'Ejercicios prácticos');
+      ${BLOCKS.map((b) => { const xs = X.filter((x) => KIND_BLOCK[x.kind] === b.id); const code = xs.filter((x) => !isConceptual(x)), concept = xs.filter(isConceptual); return xs.length ? `${sectionHead(`<span style="color:var(--${b.color})">Bloque ${b.roman}</span> · ${esc(b.title)}`, `<span class="hint">${plural(code.length, 'ejercicio', 'ejercicios')} · ${plural(concept.length, 'pregunta conceptual', 'preguntas conceptuales')}</span>`)}${code.length ? `<div class="grid">${code.map(exerciseCard).join('')}</div>` : ''}${concept.length ? `<h3 class="sub-head">Preguntas conceptuales</h3><div class="grid">${concept.map(exerciseCard).join('')}</div>` : ''}` : ''; }).join('')}`, 'Ejercicios prácticos');
   }
   function exercisePage(id) {
     const x = XB[id];
     if (!x) return notFound();
     const st = S.ex[id] || (S.ex[id] = {});
-    const edit = x.files.find((f) => f.name === x.edit) || x.files[x.files.length - 1];
+    const edit = x.files.find((f) => f.name === x.edit) || x.files[x.files.length - 1] || { name: '', code: '' };
     const startCode = x.answerStarter ?? edit.code;
     const i = X.indexOf(x), prev = X[i - 1], next = X[i + 1];
     setLast(`#/ejercicio/${id}`, `Ejercicio ${id} · ${x.title}`, 'Ejercicios prácticos');
@@ -1144,7 +1153,7 @@
         </section>
         <section class="card ex-sec" id="sol-sec"><h2>Solución y autoevaluación</h2>
           <div id="sol"${st.open ? '' : ' hidden'}>
-            <h3>Solución de referencia</h3><pre><code>${esc(x.solution.code)}</code></pre>
+            <h3>Solución de referencia</h3>${modelAnswer(x)}
             <h3>Cambios</h3><ul>${x.solution.changes.map((c) => `<li>${inline(c)}</li>`).join('')}</ul>
             <h3>Explicación</h3><div class="prose-sm">${mdBlock(x.solution.explanation)}</div>
             ${x.solution.alternatives ? `<h3>Soluciones alternativas aceptables</h3><div class="prose-sm">${mdBlock(x.solution.alternatives)}</div>` : ''}
