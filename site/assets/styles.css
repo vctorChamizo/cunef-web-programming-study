@@ -322,6 +322,16 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .lang-switch a:hover { color: var(--text); background: var(--surface-2); }
 .lang-switch a.active { background: var(--accent-soft); color: var(--accent); }
 .lang-switch a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* Practical mode: write the code or explain it. */
+.mode-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 18px; }
+.mode-switch { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.mode-switch button { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: none; font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--text-3); cursor: pointer; transition: background .15s, color .15s; }
+.mode-switch button .i { width: 15px; height: 15px; }
+.mode-switch button:hover { color: var(--text); background: var(--surface-2); }
+.mode-switch button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.mode-switch button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.mode-bar .hint { font-size: 0.86rem; color: var(--text-3); }
+@media (max-width: 520px) { .mode-switch { display: flex; width: 100%; } .mode-switch button { flex: 1; justify-content: center; padding: 0 8px; } }
 @view-transition { navigation: auto; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .2s; animation-timing-function: ease; }
 .topbar { view-transition-name: topbar; }

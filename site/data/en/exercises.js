@@ -866,8 +866,8 @@ The task is to fix the function and explain the bug in a comment.`,
 
 function getInitials(names) {
   return names.forEach((fullName) => {
-const [first, last] = fullName.split(" ");
-return first[0].toUpperCase() + "." + last[0].toUpperCase();
+    const [first, last] = fullName.split(" ");
+    return first[0].toUpperCase() + "." + last[0].toUpperCase();
   });
 }
 
@@ -878,8 +878,8 @@ console.log(getInitials(students));` }],
       code: `function getInitials(names) {
   // forEach always returns undefined; map returns an array with what the callback returns
   return names.map((fullName) => {
-const [first, last] = fullName.split(" ");
-return first[0].toUpperCase() + "." + last[0].toUpperCase();
+    const [first, last] = fullName.split(" ");
+    return first[0].toUpperCase() + "." + last[0].toUpperCase();
   });
 }`,
       changes: ['Replace \`forEach\` with \`map\`.'],
@@ -907,19 +907,19 @@ function ProductList() {
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
-async function load() {
-  const response = await api.get("/products");
-  setProducts(response.data);
-}
-load();
+    async function load() {
+      const response = await api.get("/products");
+      setProducts(response.data);
+    }
+    load();
   });
 
   return (
-<ul>
-  {products.map((p) => (
-    <li key={p.id}>{p.name}</li>
-  ))}
-</ul>
+    <ul>
+      {products.map((p) => (
+        <li key={p.id}>{p.name}</li>
+      ))}
+    </ul>
   );
 }
 
@@ -929,8 +929,8 @@ export default ProductList;` }],
     solution: {
       code: `useEffect(() => {
   async function load() {
-const response = await api.get("/products");
-setProducts(response.data);
+    const response = await api.get("/products");
+    setProducts(response.data);
   }
   load();
 }, []); // without the array, the effect ran after every render, and setProducts triggered another one`,
@@ -961,7 +961,7 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   const email = req.query.email;
   const { rows } = await pool.query(
-\`SELECT id, email FROM users WHERE email = '\${email}'\`
+    \`SELECT id, email FROM users WHERE email = '\${email}'\`
   );
   res.json(rows[0] ?? null);
 });
@@ -973,8 +973,8 @@ module.exports = router;` }],
       code: `router.get("/", async (req, res) => {
   const email = req.query.email;
   const { rows } = await pool.query(
-"SELECT id, email FROM users WHERE email = $1",
-[email]
+    "SELECT id, email FROM users WHERE email = $1",
+    [email]
   );
   res.json(rows[0] ?? null);
 });`,
@@ -1013,9 +1013,9 @@ console.log(stockValue(products)); // 360` }],
       code: `function stockValue(list) {
   let total = 0;
   for (const product of list) {
-if (product.units > 0) {
-  total += product.price * product.units;
-}
+    if (product.units > 0) {
+      total += product.price * product.units;
+    }
   }
   return total;
 }`,
@@ -1046,11 +1046,11 @@ function Counter() {
   // 1. Counter state, starting at 0
 
   return (
-<div>
-  <p>{/* value */}</p>
-  <button>-1</button>
-  <button>+1</button>
-</div>
+    <div>
+      <p>{/* value */}</p>
+      <button>-1</button>
+      <button>+1</button>
+    </div>
   );
 }
 
@@ -1062,11 +1062,11 @@ export default Counter;` }],
   const [count, setCount] = useState(0);
 
   return (
-<div>
-  <p>{count}</p>
-  <button onClick={() => setCount(Math.max(0, count - 1))}>-1</button>
-  <button onClick={() => setCount(count + 1)}>+1</button>
-</div>
+    <div>
+      <p>{count}</p>
+      <button onClick={() => setCount(Math.max(0, count - 1))}>-1</button>
+      <button onClick={() => setCount(count + 1)}>+1</button>
+    </div>
   );
 }`,
       changes: ['\`useState(0)\`.', 'The value in the paragraph.', 'An \`onClick\` on each button; the subtract button does not go below 0.'],
@@ -1112,7 +1112,7 @@ module.exports = router;
   const result = await pool.query("DELETE FROM products WHERE id = $1", [req.params.id]);
 
   if (result.rowCount === 0) {
-return res.status(404).json({ error: "Product not found" });
+    return res.status(404).json({ error: "Product not found" });
   }
 
   res.status(204).end();
@@ -1144,14 +1144,14 @@ function NewTaskForm({ onAdd }) {
   const [title, setTitle] = useState("");
 
   function handleSubmit(event) {
-// 2. Complete
+    // 2. Complete
   }
 
   return (
-<form onSubmit={handleSubmit}>
-  <input placeholder="New task" /> {/* 1. Complete */}
-  <button type="submit">Add</button> {/* 3. Complete */}
-</form>
+    <form onSubmit={handleSubmit}>
+      <input placeholder="New task" /> {/* 1. Complete */}
+      <button type="submit">Add</button> {/* 3. Complete */}
+    </form>
   );
 }
 
@@ -1221,12 +1221,12 @@ module.exports = router;` }],
   const { name, price } = req.body;
 
   if (typeof name !== "string" || name.trim() === "" || typeof price !== "number" || price < 0) {
-return res.status(400).json({ error: "Invalid product" });
+    return res.status(400).json({ error: "Invalid product" });
   }
 
   const { rows } = await pool.query(
-"INSERT INTO products (name, price) VALUES ($1, $2) RETURNING id, name, price",
-[name.trim(), price]
+    "INSERT INTO products (name, price) VALUES ($1, $2) RETURNING id, name, price",
+    [name.trim(), price]
   );
   res.status(201).json(rows[0]);
 });`,

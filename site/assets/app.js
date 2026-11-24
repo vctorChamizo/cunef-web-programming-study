@@ -13,6 +13,8 @@
   const KIND_BLOCK = { js: 1, express: 2, react: 3 };
   const X = (window.EXERCISES || []).slice().sort((a, b) => KIND_BLOCK[a.kind] - KIND_BLOCK[b.kind] || a.id.localeCompare(b.id));
   const XB = Object.fromEntries(X.map((x) => [x.id, x]));
+  // Explain mode (explain.js): questions on the code, answered in prose, instead of writing it.
+  const XP = window.EXPLAIN || {};
   // Practice exams: built only from quiz questions and practical exercises (practice-bank.js).
   const QB = Object.fromEntries(Object.values(Q).flatMap((quiz) => quiz.questions).map((q) => [q.id, q]));
   const E = window.SIMULACROS
@@ -887,17 +889,19 @@
         ? 'Cada simulacro reproduce el examen final: una parte tipo test de 8 preguntas (4 puntos, sin penalización por error), que se corrige sola, y una parte práctica de 6 puntos, con tres ejercicios de código y una pregunta conceptual, que se autoevalúa con la solución de referencia y sus criterios de corrección.'
         : 'Cada simulacro reproduce la parte tipo test del examen final: 8 preguntas de los tres bloques, 0,5 puntos cada una y sin penalización por error. Se responde todo y se corrige al final.',
         meta: `<span class="chip plain">${icon('award')}Tipo test: 4 puntos</span>${HAS_PRACTICAL ? `<span class="chip plain">${icon('code')}Parte práctica: 6 puntos</span>` : ''}<span class="chip plain">${icon('clock')}Con cronómetro orientativo</span>` })}
+      ${HAS_PRACTICAL ? modeSwitch() : ''}
       <div class="grid">${E.map(examCard).join('')}${randomExamCard()}</div>`, 'Simulacros');
+    wireModeSwitch();
   }
 
   const isConceptual = (x) => /^(Pregunta conceptual|Conceptual question)$/.test(x?.category || x?.ex?.category || '');
   // The reference answer of a conceptual question is prose; the rest are code.
-  const modelAnswer = (x) => (isConceptual(x) ? `<div class="prose-sm model-answer">${mdBlock(x.solution.code)}</div>` : `<pre><code>${esc(x.solution.code)}</code></pre>`);
+  const modelAnswer = (x) => (isConceptual(x) || x.explain ? `<div class="prose-sm model-answer">${mdBlock(x.solution.code)}</div>` : `<pre><code>${esc(x.solution.code)}</code></pre>`);
   // An exercise (exercises.js format) becomes a practical item of a practice exam, worth `points`.
   function toPractical(ex, points = 2) {
     const edit = ex.files.find((f) => f.name === ex.edit) || ex.files[ex.files.length - 1] || { name: '', code: '' };
     return {
-      id: ex.id, kind: ex.kind, title: ex.title, points, ex,
+      id: ex.id, key: ex.explain ? ex.id + '~x' : ex.id, kind: ex.kind, title: ex.title, points, ex,
       starter: ex.answerStarter ?? edit.code,
       rubric: ex.rubric.map((r) => ({ text: r.text, points: (r.points * points) / 10 })),
     };
@@ -912,6 +916,13 @@
   const PRACTICAL = E.flatMap((x) => (x.practical || []).map((p) => ({ ...p, exam: x.n })));
   const PI = Object.fromEntries(PRACTICAL.map((p) => [p.id, p]));
   const HAS_PRACTICAL = PRACTICAL.length > 0;
+  // The practical item in the current mode: the explain version when there is one.
+  const PIX = {};
+  const practicalItem = (id) => {
+    const p = PI[id];
+    if (!explainMode() || !p.ex || !XP[id]) return p;
+    return PIX[id] || (PIX[id] = { ...toPractical(explainOf(p.ex), p.points), exam: p.exam });
+  };
   // Random practice exam: one code exercise of each kind and one conceptual question.
   function randomPracticalIds() {
     const code = PRACTICAL.filter((p) => !isConceptual(p)), concept = PRACTICAL.filter(isConceptual);
@@ -951,7 +962,8 @@
     if (!Array.isArray(cur.pids) || !cur.pids.every((id) => PI[id]) || (random && HAS_PRACTICAL && !cur.pids.some((id) => isConceptual(PI[id])) && PRACTICAL.some(isConceptual))) cur.pids = random ? (HAS_PRACTICAL ? randomPracticalIds() : []) : (x.practical || []).map((p) => p.id);
     cur.code = cur.code || {};
     const qs = cur.ids.map((id) => QI[id].q);
-    const ps = cur.pids.map((id) => PI[id]);
+    const ps = cur.pids.map(practicalItem);
+    const xm = ps.some((p) => p.ex?.explain);
     const pTotal = ps.reduce((a, p) => a + (p.points || 0), 0);
     const name = random ? 'Simulacro aleatorio' : `Simulacro ${x.n}`;
     setLast(`#/simulacro/${key}`, name, ps.length ? 'Simulacro completo del examen' : 'Parte tipo test del examen');
@@ -967,13 +979,14 @@
             <div class="qhead"><span class="qnum">Pregunta ${qi + 1} de ${qs.length}</span><span class="chip">${typeLabel[q.type] || 'Pregunta'}</span></div>
             <div class="qtext" id="qt-${qi}">${md(q.q)}</div>${choicesHtml(q, qi, true)}<div class="fb" aria-live="polite"></div></section>`).join('')}
           ${ps.length ? `<div class="part-head" id="practical"><h2>Parte práctica</h2><span class="chip accent">${fmtPts(pTotal)} puntos</span></div>
-          <p class="muted part-lead">Escribir cada solución en su recuadro, como en el examen. Al corregir se muestra la solución de referencia con sus criterios: marcar los que se cumplen para obtener la nota orientativa.</p>
+          ${modeSwitch()}
+          <p class="muted part-lead">${xm ? 'Responder a las preguntas de cada ejercicio en su recuadro, sin modificar el código. Al corregir se muestra la respuesta de referencia con sus criterios: marcar los que se cumplen para obtener la nota orientativa.' : 'Escribir cada solución en su recuadro, como en el examen. Al corregir se muestra la solución de referencia con sus criterios: marcar los que se cumplen para obtener la nota orientativa.'}</p>
           ${ps.map((p, pi) => `<section class="qcard pcard" id="p-${pi}" data-pid="${esc(p.id)}">
             <div class="qhead"><span class="qnum">Ejercicio ${pi + 1} de ${ps.length}</span><span class="chip accent">${fmtPts(p.points || 0)} ${p.points === 1 ? 'punto' : 'puntos'}</span></div>
             <h3 class="ptitle">${esc(p.title)}</h3>
             ${p.ex ? `<div class="qtext prose-sm">${mdBlock(p.ex.statement)}</div>${p.ex.files.map((f) => codeFile(f)).join('')}<div class="expected"><strong>Resultado esperado</strong>${mdBlock(p.ex.expected)}</div>` : `<div class="qtext">${md(p.statement)}</div>`}
             <label class="sr-only" for="code-${pi}">Solución del ejercicio ${pi + 1}</label>
-            <textarea class="code-input" id="code-${pi}" spellcheck="false" autocapitalize="off" autocomplete="off" rows="${Math.max(8, String(cur.code[p.id] ?? p.starter ?? '').split('\n').length + 3)}">${esc(cur.code[p.id] ?? p.starter ?? '')}</textarea>
+            <textarea class="code-input" id="code-${pi}" spellcheck="false" autocapitalize="off" autocomplete="off" rows="${Math.max(8, String(cur.code[p.key] ?? p.starter ?? '').split('\n').length + 3)}">${esc(cur.code[p.key] ?? p.starter ?? '')}</textarea>
             <div class="pfb"></div></section>`).join('')}` : ''}
           <div class="actions" id="exam-actions"><button class="btn" id="grade" type="button">${icon('check')}Corregir el simulacro</button><span class="hint" id="grade-hint"></span></div>
           <div class="exam-mobile-bar" id="mbar"><span class="txt" id="mbar-txt"></span><button class="btn sm" id="grade-m" type="button">Corregir</button></div>
@@ -1013,9 +1026,9 @@
       update();
     }));
     $$('.exam-nav a').forEach((a) => on(a, 'click', (ev) => { ev.preventDefault(); $(a.dataset.p != null ? '#p-' + a.dataset.p : '#q-' + a.dataset.q).scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
-    const markWritten = () => ps.forEach((p, pi) => $(`.exam-nav a[data-p="${pi}"]`)?.classList.toggle('answered', !!cur.code[p.id] && cur.code[p.id] !== (p.starter || '')));
+    const markWritten = () => ps.forEach((p, pi) => $(`.exam-nav a[data-p="${pi}"]`)?.classList.toggle('answered', !!cur.code[p.key] && cur.code[p.key] !== (p.starter || '')));
     $$('.code-input').forEach((ta, pi) => {
-      on(ta, 'input', () => { cur.code[ps[pi].id] = ta.value; save(); markWritten(); });
+      on(ta, 'input', () => { cur.code[ps[pi].key] = ta.value; save(); markWritten(); });
       on(ta, 'keydown', (ev) => { // Tab indents instead of leaving the box; Esc then Tab leaves it.
         if (ev.key !== 'Tab' || ev.shiftKey || ta.dataset.esc) { if (ev.key === 'Tab') delete ta.dataset.esc; return; }
         ev.preventDefault();
@@ -1027,6 +1040,7 @@
     });
     markWritten();
     wireCopy(main);
+    wireModeSwitch();
 
     const grade = () => {
       if (graded) return;
@@ -1053,8 +1067,8 @@
       $$('.code-input').forEach((ta) => { ta.readOnly = true; });
       ps.forEach((p, pi) => {
         const pts = rubricPoints(p);
-        $(`#p-${pi} .pfb`).innerHTML = `<div class="feedback"><div class="fb-title">${icon('code')}Solución de referencia</div>${p.ex ? `${modelAnswer(p.ex)}<div class="prose-sm">${mdBlock(p.ex.solution.explanation)}</div>` : md(p.model)}
-          ${pts.length ? `<p class="rubric-title"><strong>Criterios de corrección</strong> · marcar los que cumple la solución escrita</p>
+        $(`#p-${pi} .pfb`).innerHTML = `<div class="feedback"><div class="fb-title">${icon('code')}${p.ex?.explain ? 'Respuesta de referencia' : 'Solución de referencia'}</div>${p.ex ? `${modelAnswer(p.ex)}<div class="prose-sm">${mdBlock(p.ex.solution.explanation)}</div>` : md(p.model)}
+          ${pts.length ? `<p class="rubric-title"><strong>Criterios de corrección</strong> · marcar los que cumple ${p.ex?.explain ? 'la respuesta escrita' : 'la solución escrita'}</p>
           <ul class="rubric">${rubricItems(p).map((r, ri) => `<li><label><input type="checkbox" data-p="${pi}" data-r="${ri}"><span>${md(r.text)}</span><span class="rp">${fmtPts(pts[ri])} p.</span></label></li>`).join('')}</ul>
           <p class="pscore">Nota orientativa del ejercicio: <strong id="ps-${pi}">0</strong> de ${fmtPts(p.points || 0)}</p>` : ''}</div>`;
       });
@@ -1101,7 +1115,40 @@
     on($('#grade-s'), 'click', () => { if (!confirmArmed && Object.keys(cur.picks).length < qs.length) $('#exam-actions').scrollIntoView({ behavior: 'smooth', block: 'center' }); grade(); });
   }
 
-  // ---------- Practical exercises (study mode) ----------
+  // ---------- Practical exercises: write the code or explain it ----------
+  const HAS_EXPLAIN = Object.keys(XP).length > 0;
+  const explainMode = () => HAS_EXPLAIN && S.mode === 'explain';
+  // Progress key of an exercise: the explain version keeps its own answer and score.
+  const exKey = (id) => (explainMode() && XP[id] ? id + '~x' : id);
+  // Explain version of an exercise. A bug fix shows only the faulty code; the others also show the completed code.
+  const explained = {};
+  function explainOf(x) {
+    const e = XP[x.id];
+    if (!e || !explainMode()) return x;
+    if (explained[x.id]) return explained[x.id];
+    const edit = x.files.find((f) => f.name === x.edit) || x.files[x.files.length - 1];
+    const files = /^A\d/.test(x.id) || !edit ? x.files : [...x.files, { name: `Versión completada · ${edit.name}`, lang: edit.lang, code: x.solution.code }];
+    return (explained[x.id] = { ...x, explain: true, statement: e.statement, files, answerStarter: e.questions, hints: e.hints?.length ? e.hints : x.hints,
+      solution: { code: e.answer, changes: [], explanation: x.solution.explanation, alternatives: e.alternatives || '' },
+      rubric: e.rubric, penalties: e.penalties || [], partial: e.partial || '' });
+  }
+  function modeSwitch() {
+    if (!HAS_EXPLAIN) return '';
+    const xm = explainMode();
+    return `<div class="mode-bar"><div class="mode-switch" role="group" aria-label="Modo de la parte práctica">
+      <button type="button" data-mode="write" aria-pressed="${!xm}">${icon('code')}Escribir el código</button>
+      <button type="button" data-mode="explain" aria-pressed="${xm}">${icon('book')}Explicar el código</button></div>
+      <span class="hint">${xm ? 'Se lee el código y se responde a preguntas sobre él, sin escribirlo.' : 'Se corrige o se completa el código.'}</span></div>`;
+  }
+  function wireModeSwitch() {
+    $$('[data-mode]').forEach((b) => on(b, 'click', () => {
+      if ((S.mode || 'write') === b.dataset.mode) return;
+      S.mode = b.dataset.mode; save(true);
+      const y = window.scrollY;
+      route();
+      window.scrollTo(0, y);
+    }));
+  }
   const EX_CATS = ['Corrección de errores', 'Completar código', 'Integración', 'Comprensión de código'];
   function wireCopy(root) {
     $$('[data-copy]', root).forEach((b) => on(b, 'click', async () => {
@@ -1110,7 +1157,7 @@
     }));
   }
   function exerciseCard(x) {
-    const r = S.ex[x.id];
+    const r = S.ex[exKey(x.id)];
     return `<a class="card ex-card" href="#/ejercicio/${x.id}">${icon('arrow-right', 'go')}
       <div class="card-top"><span class="q-num">Ejercicio ${esc(x.id)} · ${esc(x.category)}</span><span class="chip plain">${esc(x.tech)}</span></div>${x.conceptual ? `<span class="chip accent" style="align-self:flex-start;margin-bottom:6px">${icon('layers')}Incluye parte conceptual</span>` : ''}
       <h3>${esc(x.title)}</h3>
@@ -1118,18 +1165,20 @@
       <div class="card-foot"><span class="chip plain">${icon('clock')}${esc(x.minutes)} min</span><span class="chip plain">${esc(x.level)}</span>${r?.score != null ? `<span class="chip ${r.score >= 7 ? 'ok' : r.score >= 5 ? 'warn' : 'bad'}">${icon('award')}${fmtPts(r.score)} / 10</span>` : r?.code ? '<span class="chip warn">Empezado</span>' : ''}</div></a>`;
   }
   function exercisesPage() {
-    const done = X.filter((x) => S.ex[x.id]?.score != null).length;
+    const done = X.filter((x) => S.ex[exKey(x.id)]?.score != null).length;
     render(`
       ${pageHead({ path: [['Ejercicios prácticos', '']], eyebrow: 'Practicar', title: 'Ejercicios prácticos',
         lead: 'Ejercicios cortos como los de la parte práctica del examen: corregir un error, completar un fragmento, conectar piezas que ya existen o explicar un código, y preguntas conceptuales de respuesta breve sobre el porqué. Cada uno trae dos pistas, la solución de referencia y los criterios de corrección para autoevaluarse sobre 10.',
         meta: `<span class="chip plain">${done} de ${X.length} autoevaluados</span><span class="chip plain">${icon('clock')}5-15 minutos cada uno</span>` })}
       <div class="callout info">${icon('info')}<div>Se recomienda escribir la solución sin abrir las pistas y consultar la solución solo al terminar. En el examen no hay pistas.</div></div>
+      ${modeSwitch()}
       ${BLOCKS.map((b) => { const xs = X.filter((x) => KIND_BLOCK[x.kind] === b.id); const code = xs.filter((x) => !isConceptual(x)), concept = xs.filter(isConceptual); return xs.length ? `${sectionHead(`<span style="color:var(--${b.color})">Bloque ${b.roman}</span> · ${esc(b.title)}`, `<span class="hint">${plural(code.length, 'ejercicio', 'ejercicios')} · ${plural(concept.length, 'pregunta conceptual', 'preguntas conceptuales')}</span>`)}${code.length ? `<div class="grid">${code.map(exerciseCard).join('')}</div>` : ''}${concept.length ? `<h3 class="sub-head">Preguntas conceptuales</h3><div class="grid">${concept.map(exerciseCard).join('')}</div>` : ''}` : ''; }).join('')}`, 'Ejercicios prácticos');
+    wireModeSwitch();
   }
   function exercisePage(id) {
-    const x = XB[id];
-    if (!x) return notFound();
-    const st = S.ex[id] || (S.ex[id] = {});
+    if (!XB[id]) return notFound();
+    const x = explainOf(XB[id]), xm = !!x.explain, sk = exKey(id);
+    const st = S.ex[sk] || (S.ex[sk] = {});
     const edit = x.files.find((f) => f.name === x.edit) || x.files[x.files.length - 1] || { name: '', code: '' };
     const startCode = x.answerStarter ?? edit.code;
     const i = X.indexOf(x), prev = X[i - 1], next = X[i + 1];
@@ -1137,39 +1186,41 @@
     render(`
       ${pageHead({ path: [['Ejercicios prácticos', '#/ejercicios'], [`Ejercicio ${x.id}`, '']], eyebrow: `Ejercicio ${esc(x.id)} · ${esc(x.category)}`, title: esc(x.title),
         meta: `<span class="chip plain">${icon('code')}${esc(x.tech)}</span><span class="chip plain">${esc(x.level)}</span><span class="chip plain">${icon('clock')}${esc(x.minutes)} min</span>${x.concepts.map((c) => `<span class="chip plain">${esc(c)}</span>`).join('')}` })}
+      ${XP[id] ? modeSwitch() : ''}
       <div class="ex-layout">
         <section class="card ex-sec"><h2>Enunciado</h2><div class="prose-sm">${mdBlock(x.statement)}</div></section>
-        <section class="card ex-sec"><h2>Código inicial</h2>${x.files.map((f) => codeFile(f)).join('')}</section>
+        <section class="card ex-sec"><h2>${xm ? 'Código' : 'Código inicial'}</h2>${x.files.map((f) => codeFile(f)).join('')}</section>
         <section class="card ex-sec"><h2>Resultado esperado</h2><div class="prose-sm">${mdBlock(x.expected)}</div></section>
-        <section class="card ex-sec"><h2>Solución propia</h2>
+        <section class="card ex-sec"><h2>${xm ? 'Respuesta propia' : 'Solución propia'}</h2>
           <p class="muted" style="margin:0 0 10px;font-size:.9rem">Se guarda en este navegador. ${x.answerStarter ? '' : `Parte del fichero <code>${esc(edit.name)}</code>.`}</p>
-          <label class="sr-only" for="ex-code">Solución propia</label>
+          <label class="sr-only" for="ex-code">${xm ? 'Respuesta propia' : 'Solución propia'}</label>
           <textarea class="code-input" id="ex-code" spellcheck="false" autocapitalize="off" autocomplete="off" rows="${Math.min(28, Math.max(10, String(st.code ?? startCode).split('\n').length + 2))}">${esc(st.code ?? startCode)}</textarea>
-          <div class="actions" style="margin-top:12px"><button class="btn ghost sm" id="ex-reset" type="button">${icon('rotate')}Volver al código inicial</button></div>
+          <div class="actions" style="margin-top:12px"><button class="btn ghost sm" id="ex-reset" type="button">${icon('rotate')}${xm ? 'Volver a las preguntas' : 'Volver al código inicial'}</button></div>
         </section>
         <section class="card ex-sec"><h2>Pistas</h2>
           <div id="hints">${x.hints.map((h, k) => `<div class="hint-box" data-h="${k}" ${k < (st.hints || 0) ? '' : 'hidden'}><span class="hint-n">Pista ${k + 1}</span><div>${mdBlock(h)}</div></div>`).join('')}</div>
           <button class="btn secondary sm" id="hint-btn" type="button"${(st.hints || 0) >= x.hints.length ? ' hidden' : ''}>${icon('info')}Ver la pista ${(st.hints || 0) + 1}</button>
         </section>
-        <section class="card ex-sec" id="sol-sec"><h2>Solución y autoevaluación</h2>
+        <section class="card ex-sec" id="sol-sec"><h2>${xm ? 'Respuesta y autoevaluación' : 'Solución y autoevaluación'}</h2>
           <div id="sol"${st.open ? '' : ' hidden'}>
-            <h3>Solución de referencia</h3>${modelAnswer(x)}
-            <h3>Cambios</h3><ul>${x.solution.changes.map((c) => `<li>${inline(c)}</li>`).join('')}</ul>
+            <h3>${xm ? 'Respuesta de referencia' : 'Solución de referencia'}</h3>${modelAnswer(x)}
+            ${x.solution.changes.length ? `<h3>Cambios</h3><ul>${x.solution.changes.map((c) => `<li>${inline(c)}</li>`).join('')}</ul>` : ''}
             <h3>Explicación</h3><div class="prose-sm">${mdBlock(x.solution.explanation)}</div>
-            ${x.solution.alternatives ? `<h3>Soluciones alternativas aceptables</h3><div class="prose-sm">${mdBlock(x.solution.alternatives)}</div>` : ''}
+            ${x.solution.alternatives ? `<h3>${xm ? 'Respuestas alternativas aceptables' : 'Soluciones alternativas aceptables'}</h3><div class="prose-sm">${mdBlock(x.solution.alternatives)}</div>` : ''}
             <h3>Criterios de corrección</h3>
-            <p class="muted" style="margin:0 0 8px;font-size:.9rem">Marcar los criterios que cumple la solución propia.</p>
+            <p class="muted" style="margin:0 0 8px;font-size:.9rem">${xm ? 'Marcar los criterios que cumple la respuesta propia.' : 'Marcar los criterios que cumple la solución propia.'}</p>
             <ul class="rubric">${x.rubric.map((r, k) => `<li><label><input type="checkbox" data-r="${k}"${st.checks?.[k] ? ' checked' : ''}><span>${inline(r.text)}</span><span class="rp">${fmtPts(r.points)} p.</span></label></li>`).join('')}</ul>
             ${x.penalties?.length ? `<div class="callout warn" style="margin-top:12px">${icon('alert')}<div><strong>Penalizaciones</strong><ul>${x.penalties.map((t) => `<li>${inline(t)}</li>`).join('')}</ul></div></div>` : ''}
             ${x.partial ? `<p class="muted" style="font-size:.9rem"><strong>Puntuación parcial.</strong> ${inline(x.partial)}</p>` : ''}
             <div class="ex-score"><span>Nota orientativa</span><strong id="ex-score">0</strong><span>/ 10</span></div>
           </div>
-          <button class="btn" id="sol-btn" type="button"${st.open ? ' hidden' : ''}>${icon('check')}Ver la solución y autoevaluar</button>
+          <button class="btn" id="sol-btn" type="button"${st.open ? ' hidden' : ''}>${icon('check')}${xm ? 'Ver la respuesta y autoevaluar' : 'Ver la solución y autoevaluar'}</button>
         </section>
       </div>
       <nav class="ex-pager">${prev ? `<a class="btn secondary" href="#/ejercicio/${prev.id}">${icon('arrow-left')}Ejercicio ${prev.id}</a>` : '<span></span>'}${next ? `<a class="btn secondary" href="#/ejercicio/${next.id}">Ejercicio ${next.id}${icon('arrow-right')}</a>` : `<a class="btn secondary" href="#/ejercicios">Todos los ejercicios</a>`}</nav>`, `Ejercicio ${id}`);
 
     wireCopy(main);
+    wireModeSwitch();
     const ta = $('#ex-code');
     on(ta, 'input', () => { st.code = ta.value; save(); });
     on(ta, 'keydown', (ev) => {
@@ -1180,7 +1231,7 @@
       st.code = ta.value; save();
     });
     on(ta, 'keyup', (ev) => { if (ev.key === 'Escape') ta.dataset.esc = '1'; });
-    on($('#ex-reset'), 'click', () => { if (!confirm(tr('¿Sustituir la solución propia por el código inicial?'))) return; ta.value = startCode; delete st.code; save(); });
+    on($('#ex-reset'), 'click', () => { if (!confirm(tr(xm ? '¿Sustituir la respuesta propia por las preguntas?' : '¿Sustituir la solución propia por el código inicial?'))) return; ta.value = startCode; delete st.code; save(); });
     on($('#hint-btn'), 'click', () => {
       st.hints = Math.min(x.hints.length, (st.hints || 0) + 1); save();
       $$('.hint-box').forEach((h) => { h.hidden = Number(h.dataset.h) >= st.hints; });
@@ -1235,7 +1286,7 @@
       if (answered || written) items.push({ href: `#/simulacro/${k}`, ic: 'clipboard', title: k === 'aleatorio' ? 'Simulacro aleatorio' : `Simulacro ${k}`, sub: `${answered} de ${(c.ids || []).length} preguntas respondidas${written ? ` · ${plural(written, 'ejercicio empezado', 'ejercicios empezados')}` : ''}`, p: pct(answered, (c.ids || []).length || 8) });
     }
     for (const x of X) {
-      const r = S.ex[x.id];
+      const r = S.ex[exKey(x.id)];
       if (r && r.score == null && (r.code != null || r.hints || r.open)) items.push({ href: `#/ejercicio/${x.id}`, ic: 'code', title: `Ejercicio ${x.id} · ${x.title}`, sub: r.open ? 'Solución abierta, sin autoevaluar' : `${r.hints ? plural(r.hints, 'pista vista', 'pistas vistas') : 'Solución empezada'}`, p: null });
     }
     return items;
@@ -1261,8 +1312,8 @@
       <div class="table-wrap"><table><thead><tr><th>Quiz</th><th class="num">Intentos</th><th class="num">Último</th><th class="num">Mejor</th><th>Nivel</th><th class="num">Fecha</th></tr></thead><tbody>${rows}</tbody></table></div>
       ${sectionHead('Simulacros')}
       <div class="table-wrap"><table><thead><tr><th>Simulacro</th><th class="num">Intentos</th><th class="num">Test, último</th><th class="num">Test, mejor</th>${HAS_PRACTICAL ? '<th class="num">Práctica, último</th>' : ''}<th class="num">Fecha</th></tr></thead><tbody>${exRows}</tbody></table></div>
-      ${X.length ? `${sectionHead('Ejercicios prácticos')}
-      <div class="table-wrap"><table><thead><tr><th>Ejercicio</th><th>Pistas vistas</th><th class="num">Autoevaluación</th><th class="num">Fecha</th></tr></thead><tbody>${X.map((x) => { const r = S.ex[x.id]; return `<tr><td><a href="#/ejercicio/${x.id}"><strong>${x.id}</strong></a> · ${esc(x.title)}</td><td>${r?.hints ? `${r.hints} de ${x.hints.length}` : '—'}</td><td class="num">${r?.score != null ? `${fmtPts(r.score)} / 10` : '—'}</td><td class="num">${r?.at ? fmtShort(r.at) : '—'}</td></tr>`; }).join('')}</tbody></table></div>` : ''}
+      ${X.length ? `${sectionHead('Ejercicios prácticos', explainMode() ? '<span class="hint">Modo «Explicar el código»</span>' : '')}
+      <div class="table-wrap"><table><thead><tr><th>Ejercicio</th><th>Pistas vistas</th><th class="num">Autoevaluación</th><th class="num">Fecha</th></tr></thead><tbody>${X.map((x) => { const r = S.ex[exKey(x.id)]; return `<tr><td><a href="#/ejercicio/${x.id}"><strong>${x.id}</strong></a> · ${esc(x.title)}</td><td>${r?.hints ? `${r.hints} de ${x.hints.length}` : '—'}</td><td class="num">${r?.score != null ? `${fmtPts(r.score)} / 10` : '—'}</td><td class="num">${r?.at ? fmtShort(r.at) : '—'}</td></tr>`; }).join('')}</tbody></table></div>` : ''}
       ${sectionHead('Datos')}
       <div class="card" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
         <p style="margin:0;max-width:60ch">Borrar el progreso elimina resultados, quizzes a medias y la lista de repaso de este navegador. No se puede deshacer.</p>

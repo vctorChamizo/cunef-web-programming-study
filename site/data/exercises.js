@@ -863,8 +863,8 @@ Se pide corregir la función y explicar el error en un comentario.`,
 
 function getInitials(names) {
   return names.forEach((fullName) => {
-const [first, last] = fullName.split(" ");
-return first[0].toUpperCase() + "." + last[0].toUpperCase();
+    const [first, last] = fullName.split(" ");
+    return first[0].toUpperCase() + "." + last[0].toUpperCase();
   });
 }
 
@@ -875,8 +875,8 @@ console.log(getInitials(students));` }],
       code: `function getInitials(names) {
   // forEach siempre devuelve undefined; map devuelve un array con lo que devuelve el callback
   return names.map((fullName) => {
-const [first, last] = fullName.split(" ");
-return first[0].toUpperCase() + "." + last[0].toUpperCase();
+    const [first, last] = fullName.split(" ");
+    return first[0].toUpperCase() + "." + last[0].toUpperCase();
   });
 }`,
       changes: ['Sustituir \`forEach\` por \`map\`.'],
@@ -904,19 +904,19 @@ function ProductList() {
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
-async function load() {
-  const response = await api.get("/products");
-  setProducts(response.data);
-}
-load();
+    async function load() {
+      const response = await api.get("/products");
+      setProducts(response.data);
+    }
+    load();
   });
 
   return (
-<ul>
-  {products.map((p) => (
-    <li key={p.id}>{p.name}</li>
-  ))}
-</ul>
+    <ul>
+      {products.map((p) => (
+        <li key={p.id}>{p.name}</li>
+      ))}
+    </ul>
   );
 }
 
@@ -926,8 +926,8 @@ export default ProductList;` }],
     solution: {
       code: `useEffect(() => {
   async function load() {
-const response = await api.get("/products");
-setProducts(response.data);
+    const response = await api.get("/products");
+    setProducts(response.data);
   }
   load();
 }, []); // sin array, el efecto se ejecutaba tras cada renderizado, y setProducts provocaba otro`,
@@ -958,7 +958,7 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   const email = req.query.email;
   const { rows } = await pool.query(
-\`SELECT id, email FROM users WHERE email = '\${email}'\`
+    \`SELECT id, email FROM users WHERE email = '\${email}'\`
   );
   res.json(rows[0] ?? null);
 });
@@ -970,8 +970,8 @@ module.exports = router;` }],
       code: `router.get("/", async (req, res) => {
   const email = req.query.email;
   const { rows } = await pool.query(
-"SELECT id, email FROM users WHERE email = $1",
-[email]
+    "SELECT id, email FROM users WHERE email = $1",
+    [email]
   );
   res.json(rows[0] ?? null);
 });`,
@@ -1010,9 +1010,9 @@ console.log(stockValue(products)); // 360` }],
       code: `function stockValue(list) {
   let total = 0;
   for (const product of list) {
-if (product.units > 0) {
-  total += product.price * product.units;
-}
+    if (product.units > 0) {
+      total += product.price * product.units;
+    }
   }
   return total;
 }`,
@@ -1043,11 +1043,11 @@ function Counter() {
   // 1. Estado del contador, empezando en 0
 
   return (
-<div>
-  <p>{/* valor */}</p>
-  <button>-1</button>
-  <button>+1</button>
-</div>
+    <div>
+      <p>{/* valor */}</p>
+      <button>-1</button>
+      <button>+1</button>
+    </div>
   );
 }
 
@@ -1059,11 +1059,11 @@ export default Counter;` }],
   const [count, setCount] = useState(0);
 
   return (
-<div>
-  <p>{count}</p>
-  <button onClick={() => setCount(Math.max(0, count - 1))}>-1</button>
-  <button onClick={() => setCount(count + 1)}>+1</button>
-</div>
+    <div>
+      <p>{count}</p>
+      <button onClick={() => setCount(Math.max(0, count - 1))}>-1</button>
+      <button onClick={() => setCount(count + 1)}>+1</button>
+    </div>
   );
 }`,
       changes: ['\`useState(0)\`.', 'El valor en el párrafo.', 'Un \`onClick\` en cada botón; el de restar no baja de 0.'],
@@ -1109,7 +1109,7 @@ module.exports = router;
   const result = await pool.query("DELETE FROM products WHERE id = $1", [req.params.id]);
 
   if (result.rowCount === 0) {
-return res.status(404).json({ error: "Product not found" });
+    return res.status(404).json({ error: "Product not found" });
   }
 
   res.status(204).end();
@@ -1141,14 +1141,14 @@ function NewTaskForm({ onAdd }) {
   const [title, setTitle] = useState("");
 
   function handleSubmit(event) {
-// 2. Completar
+    // 2. Completar
   }
 
   return (
-<form onSubmit={handleSubmit}>
-  <input placeholder="Nueva tarea" /> {/* 1. Completar */}
-  <button type="submit">Añadir</button> {/* 3. Completar */}
-</form>
+    <form onSubmit={handleSubmit}>
+      <input placeholder="Nueva tarea" /> {/* 1. Completar */}
+      <button type="submit">Añadir</button> {/* 3. Completar */}
+    </form>
   );
 }
 
@@ -1218,12 +1218,12 @@ module.exports = router;` }],
   const { name, price } = req.body;
 
   if (typeof name !== "string" || name.trim() === "" || typeof price !== "number" || price < 0) {
-return res.status(400).json({ error: "Invalid product" });
+    return res.status(400).json({ error: "Invalid product" });
   }
 
   const { rows } = await pool.query(
-"INSERT INTO products (name, price) VALUES ($1, $2) RETURNING id, name, price",
-[name.trim(), price]
+    "INSERT INTO products (name, price) VALUES ($1, $2) RETURNING id, name, price",
+    [name.trim(), price]
   );
   res.status(201).json(rows[0]);
 });`,
