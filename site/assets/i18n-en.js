@@ -123,7 +123,7 @@ window.I18N_EN = {
     'Se lee el código y se responde a preguntas sobre él, sin escribirlo.': 'The code is read and questions about it are answered, without writing it.',
     'Se corrige o se completa el código.': 'The code is fixed or completed.',
     'Modo «Explicar el código»': '“Explain the code” mode',
-    'Respuesta y autoevaluación': 'Answer and self-assessment', 'Respuesta propia': 'Own answer', 'Volver a las preguntas': 'Back to the questions', 'Respuesta de referencia': 'Reference answer',
+    'Ocultar las pistas': 'Hide the hints', 'Respuesta y autoevaluación': 'Answer and self-assessment', 'Respuesta propia': 'Own answer', 'Volver a las preguntas': 'Back to the questions', 'Respuesta de referencia': 'Reference answer',
     '¿Sustituir la respuesta propia por las preguntas?': 'Replace the own answer with the questions?',
     'Respuestas alternativas aceptables': 'Acceptable alternative answers',
     'Marcar los criterios que cumple la respuesta propia.': 'Tick the criteria the own answer meets.',

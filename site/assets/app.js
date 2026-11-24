@@ -1198,8 +1198,9 @@
           <div class="actions" style="margin-top:12px"><button class="btn ghost sm" id="ex-reset" type="button">${icon('rotate')}${xm ? 'Volver a las preguntas' : 'Volver al código inicial'}</button></div>
         </section>
         <section class="card ex-sec"><h2>Pistas</h2>
-          <div id="hints">${x.hints.map((h, k) => `<div class="hint-box" data-h="${k}" ${k < (st.hints || 0) ? '' : 'hidden'}><span class="hint-n">Pista ${k + 1}</span><div>${mdBlock(h)}</div></div>`).join('')}</div>
-          <button class="btn secondary sm" id="hint-btn" type="button"${(st.hints || 0) >= x.hints.length ? ' hidden' : ''}>${icon('info')}Ver la pista ${(st.hints || 0) + 1}</button>
+          <div id="hints">${x.hints.map((h, k) => `<div class="hint-box" data-h="${k}" hidden><span class="hint-n">Pista ${k + 1}</span><div>${mdBlock(h)}</div></div>`).join('')}</div>
+          <div class="hint-actions"><button class="btn secondary sm" id="hint-btn" type="button">${icon('info')}Ver la pista 1</button>
+          <button class="btn ghost sm" id="hint-hide" type="button" hidden>${icon('x')}Ocultar las pistas</button></div>
         </section>
         <section class="card ex-sec" id="sol-sec"><h2>${xm ? 'Respuesta y autoevaluación' : 'Solución y autoevaluación'}</h2>
           <div id="sol"${st.open ? '' : ' hidden'}>
@@ -1232,12 +1233,21 @@
     });
     on(ta, 'keyup', (ev) => { if (ev.key === 'Escape') ta.dataset.esc = '1'; });
     on($('#ex-reset'), 'click', () => { if (!confirm(tr(xm ? '¿Sustituir la respuesta propia por las preguntas?' : '¿Sustituir la solución propia por el código inicial?'))) return; ta.value = startCode; delete st.code; save(); });
-    on($('#hint-btn'), 'click', () => {
-      st.hints = Math.min(x.hints.length, (st.hints || 0) + 1); save();
-      $$('.hint-box').forEach((h) => { h.hidden = Number(h.dataset.h) >= st.hints; });
+    // Hints start hidden on every visit; the progress keeps how many have ever been seen.
+    let shown = 0;
+    const showHints = (n) => {
+      shown = n;
+      $$('.hint-box').forEach((h) => { h.hidden = Number(h.dataset.h) >= shown; });
       const b = $('#hint-btn');
-      if (st.hints >= x.hints.length) b.hidden = true; else b.innerHTML = `${icon('info')}Ver la pista ${st.hints + 1}`;
+      b.hidden = shown >= x.hints.length;
+      b.innerHTML = `${icon('info')}Ver la pista ${shown + 1}`;
+      $('#hint-hide').hidden = shown === 0;
+    };
+    on($('#hint-btn'), 'click', () => {
+      showHints(Math.min(x.hints.length, shown + 1));
+      if (shown > (st.hints || 0)) { st.hints = shown; save(); }
     });
+    on($('#hint-hide'), 'click', () => showHints(0));
     const score = () => {
       const got = $$('#sol .rubric input').reduce((a, cb) => a + (cb.checked ? x.rubric[Number(cb.dataset.r)].points : 0), 0);
       $('#ex-score').textContent = fmtPts(got);
