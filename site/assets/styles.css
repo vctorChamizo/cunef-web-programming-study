@@ -104,6 +104,9 @@
 /* ---------- Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-padding-top: calc(var(--topbar-h) + 16px); -webkit-text-size-adjust: 100%; }
+/* The hidden attribute always hides, even on elements whose class sets a display value. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0; background: var(--bg); color: var(--text);
   font: 16px/1.6 var(--font); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
